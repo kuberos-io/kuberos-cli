@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ApplicationDeployment
+metadata:
+  name: turtlebot3-sim-humble-dev
+  rosVersion: humble
+  appVersion: dev-1
+  targetFleet: turtle-fleet
+  targetRobots: ['sim-turtle-1']
+  edgeResourceGroup: ['public'] # default

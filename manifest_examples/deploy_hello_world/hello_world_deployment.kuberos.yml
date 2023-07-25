@@ -35,7 +35,7 @@ rosModules:
     # In KubeROS Abstraction: code / configuration / file are separated!
     rosParameters: 
       - name: minimal_publisher_params 
-        valueFrom: minimal_publisher_params_from_rosparameters
+        valueFrom: minimal_publisher_params_customized
       - name: launch_parameters
         valueFrom: helloworld_launch_parameters    
 
@@ -59,13 +59,13 @@ rosModules:
       useBridge: true # after parser, the target cluster should be injected.
     
 rosParameters:
-  # customer parameters
+  # custom parameters
   - name: helloworld_launch_parameters
     data:
       use_sim: false
       use_rviz: false
 
-  - name: minimal_publisher_params
+  - name: minimal_publisher_params_customized
     path: /workspace/kuberoscli/ros_deployment/config_files_hello_world/helloworld.yml
   
 
