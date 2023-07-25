@@ -1,0 +1,15 @@
+apiVersion: v1alpha
+kind: Fleet
+metadata:
+  name: mini-fleet
+  description: 'Test fleet in the lab'
+  mainCluster: kubernetes_cluster_name # name of the cluster that is registered in KubeROS
+
+robot:
+  - name: simbot-1 
+  - name: simbot-2
+
+# KubeROS introduces the fleet terminology for the users to deploy their ROS 2 software modules 
+# Access rights are implemented in the fleet layer
+# Users can also select one or serveral robots to deploy for testing purposes. 
+# This can be specified in the deployment manifest. 

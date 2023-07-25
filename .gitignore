@@ -1,0 +1,7 @@
+### Python 
+*.log
+*.pot 
+*.pyc
+__pychache__/
+
+private_configs/

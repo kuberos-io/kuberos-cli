@@ -1,0 +1,53 @@
+apiVersion: v1alpha
+kind: ClusterInventory
+metadata: 
+  # Make sure that the cluster is already registered in the KubeROS cluster
+  # check this with `kuberos cluster list`
+  clusterName: <Name of your cluster in the KubeROS database, added by using ClusterAdministration>
+  
+hosts:
+  - hostname: k8s-master-01 # hostname in your cluster: check this with `kubectl get nodes -o wide`
+    accessIp: 192.168.0.29 # access IP of you bare metal machine
+    kuberosRole: control-plane  # option: onboard | control-plane | edge | cloud
+
+  - hostname: k8s-sim-robot-1 # hostname of your local robot, must be unique in the cluster
+    alias: simbot-1
+    accessIp: 192.168.0.28
+    kuberosRole: onboard
+    onboardComputerGroup: simbot-pc # for robot that has two onboard computer!
+    locatedInRobot: 
+      name: simbot-1 # robot name, must be unique. 
+      robotId: 0001
+    peripheralDevices: # list of attached hardware and the hardware specific parameters for starting the ROSModules
+      - deviceName: sim-arm
+        parameter:
+          robot-ip: 192.168.0.5
+          ur-type: ur5
+  
+  - hostname: k8s-sim-robot-2
+    alias: simbot-2
+    accessIp: 192.168.0.69
+    kuberosRole: onboard
+    onboardComputerGroup: simbot-pc
+    locatedInRobot: 
+      name: simbot-2
+      robotId: 0002
+    peripheralDevices:
+      - deviceName: sim-arm
+        parameter:
+          robot-ip: 192.168.0.6
+
+  - hostname: edge-worker-01 # Edge workers -> Only following parameters are required. 
+    accessIp: 192.168.0.98
+    kuberosRole: edge
+    shared: true # If this tag is tree, the resources can be shared by multiple robot fleet.
+
+  - hostname: edge-worker-02
+    accessIp: 192.168.0.65
+    kuberosRole: edge
+    shared: true
+
+  - hostname: edge-worker-03
+    accessIp: 192.168.0.206
+    kuberosRole: edge
+    shared: true
