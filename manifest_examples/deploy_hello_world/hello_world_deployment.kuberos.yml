@@ -34,16 +34,19 @@ rosModules:
     # To use custom configuration, you can define your parameters in rosParameters/staticFiles section. 
     # In KubeROS Abstraction: code / configuration / file are separated!
     rosParameters: 
-      - name: minimal_publisher_params 
-        valueFrom: minimal_publisher_params_customized
-      - name: launch_parameters
+      - name: minimal-publisher-params 
+        type: key-value
+        valueFrom: minimal-publisher-params-custom
+      - name: launch-parameters
+        type: yaml
+        mountPath: /workspace/minimal_publisher/config
         valueFrom: helloworld_launch_parameters    
 
     staticFiles: 
-      - name: ml_weights_container
+      - name: ml-weights-container
         requiredBindType: container 
         hostpath: /workspace/configs/ml_model_weights
-        valueFrom: ml_weights_container
+        valueFrom: ml-weights-container
 
   - name: hello-world-listener
     image: <Container Registry>/ros2_basic_examples/hello_world:v0
@@ -58,26 +61,29 @@ rosModules:
       containerRuntime: containerd/docker # placeholder for the future
       useBridge: false # after parser, the target cluster should be injected.
     
-rosParameterMap:
+rosParamMap:
   # custom parameters
-  - name: helloworld_launch_parameters
+  - name: helloworld-launch-parameters
+    type: key-value
     data:
       use_sim: false
       use_rviz: false
 
-  - name: minimal_publisher_params_customized
+  - name: minimal-publisher-params_custom
+    type: yaml
     path: /workspace/kuberoscli/ros_deployment/config_files_hello_world/helloworld.yml
   
 
 staticFileMap: 
   # Placeholder, not included in this test version
-  - name: ml_weights_for_mask_rcnn    
+  - name: ml-weights-for-mask-rcnn    
     # The file will be uploaded to the target cluster node
-    bindMethod: container | upload | pv
+    bindType: container | upload | pv
     path: config_files/ml_model_weights.dummy
     hostpath: /workspace/config/weights
-  - name: ml_weights_container 
+  - name: ml-weights-container 
     # Weights is package into a container and deployed along the rosmodule in the same pod. 
+    bindType: container
     container: 
       - image: <container image address> 
         pullSecret: <name of your credential in KubeROS database> 
