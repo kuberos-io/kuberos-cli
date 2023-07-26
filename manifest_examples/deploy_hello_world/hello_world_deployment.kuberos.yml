@@ -43,7 +43,7 @@ rosModules:
       - name: ml_weights_container
         requiredBindType: container 
         hostpath: /workspace/configs/ml_model_weights
-        valueFrom: 
+        valueFrom: ml_weights_container
 
   - name: hello-world-listener
     image: <Container Registry>/ros2_basic_examples/hello_world:v0
@@ -56,9 +56,9 @@ rosModules:
       privilege: true
       nvidia: false # placeholder for the future
       containerRuntime: containerd/docker # placeholder for the future
-      useBridge: true # after parser, the target cluster should be injected.
+      useBridge: false # after parser, the target cluster should be injected.
     
-rosParameters:
+rosParameterMap:
   # custom parameters
   - name: helloworld_launch_parameters
     data:
@@ -69,7 +69,7 @@ rosParameters:
     path: /workspace/kuberoscli/ros_deployment/config_files_hello_world/helloworld.yml
   
 
-staticFiles: 
+staticFileMap: 
   # Placeholder, not included in this test version
   - name: ml_weights_for_mask_rcnn    
     # The file will be uploaded to the target cluster node
