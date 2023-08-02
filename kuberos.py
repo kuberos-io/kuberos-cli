@@ -399,7 +399,7 @@ class KuberosCli(object):
         parser.add_argument('cluster_name', help='Name of the cluster')
         args = parser.parse_args(args)
         # call api server 
-        url = f'{endpoints.CLUSTER_INVENTORY}{args.cluster_name}/'  
+        url = f'{endpoints.CLUSTER}{args.cluster_name}/'  
         success, data = self.__api_call('DELETE', 
                                         f'{self.api_server}/{url}',
                                         auth_token=self.auth_token)
@@ -407,9 +407,29 @@ class KuberosCli(object):
             json_str = json.dumps(data, indent=4)
             print(json_str)
         else:
-            print('error') 
+            print('error')
         
-        
+    
+    def cluster_remove(self, *args):
+        """
+        Subcommand to remove the cluster managed by KubeROS
+        """
+        parser = argparse.ArgumentParser(
+            description='Remove cluster'
+        )
+        parser.add_argument('cluster_name', help='Cluster name')
+        args = parser.parse_args(args)
+        # call api server 
+        url = f'{endpoints.CLUSTER}{args.cluster_name}/'  
+        success, data = self.__api_call('DELETE', 
+                                        f'{self.api_server}/{url}',
+                                        auth_token=self.auth_token)
+        if success:
+            json_str = json.dumps(data, indent=4)
+            print(json_str)
+        else:
+            print('error')
+            
     ################################################
     ###            FLEET MANAGEMENT              ###
     ################################################
