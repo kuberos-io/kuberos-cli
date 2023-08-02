@@ -2,10 +2,11 @@ apiVersion: v1alpha
 kind: ClusterRegistration
 metadata:
   name: <kubernetes_cluster_name>
+  clusterType: K3S # K3S / K8S 
   description: 'Short description'
-  api_server: https://10.xxx.xxx.xxx:6443
-  ca_cert: <path to cluster_ca.crt>
-  service_token_admin: eyJhbGciOiJSUzI1NiIsImtxxxxxxxxxxx
+  apiServer: https://10.xxx.xxx.xxx:6443
+  caCert: <path to cluster_ca.crt>
+  serviceTokenAdmin: eyJhbGciOiJSUzI1NiIsImtxxxxxxxxxxx
 
 # ATTENTION
 # This file should ONLY be accessible to the KubeROS administrator!
