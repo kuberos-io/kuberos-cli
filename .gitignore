@@ -5,3 +5,7 @@
 __pychache__/
 
 private_configs/
+
+tmp/
+
+.kuberos.config
