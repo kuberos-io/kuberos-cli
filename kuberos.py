@@ -163,8 +163,10 @@ class KuberosCli(object):
             data_to_display = [{
                 'cluster_name': item['cluster_name'],
                 'Type': item['cluster_type'],
+                'Alive Age': item["alive_age"],
+                'Last Sync': item['last_sync_since'],
                 'host_url': item['host_url'],
-                'uuid': item['uuid'],
+                # 'uuid': item['uuid'],
                 # 'created_at': item['created_time'],
             } for item in data]
             
@@ -175,7 +177,7 @@ class KuberosCli(object):
 
     def cluster_status(self, *args):
         """
-        Retrieve the status of a cluster with the cluster name
+        Retrieve the status of a cluster by cluster name
         """
         parser = argparse.ArgumentParser(
             description='Get cluster details'
@@ -184,29 +186,35 @@ class KuberosCli(object):
         parser.add_argument('-sync', action='store_true', help='Sync the cluster with Kuberos')
         parser.add_argument('-output', help='Output format: table / json / yaml')
         args = parser.parse_args(args)
-    
+
         # call API server
-        # url = endpoints.CLUSTER_STATUS.replace('<cluster_name>', args.cluster_name)
-        url = '{}{}/'.format(endpoints.CLUSTER, args.cluster_name)
-        success, data = self.__api_call('GET', 
+        url = f'{endpoints.CLUSTER}{args.cluster_name}/'
+        success, response = self.__api_call('GET',
                                         f'{self.api_server}/{url}',
                                         auth_token=self.auth_token, 
                                         data={
                                             'sync': args.sync
                                         })
         if success:
+            if response['res'] == 'failed':
+                print("Synchronize cluster failed.")
+                print(f'Reason: {response["msg"]}')
+                sys.exit(1)
             if args.output == 'json':
-                json_str = json.dumps(data, indent=4)
+                json_str = json.dumps(response['data'], indent=4)
                 print(json_str)
             elif args.output == 'yaml':  
-                data_to_display = yaml.dump(data, default_flow_style=False, indent=2, sort_keys=False)
+                data_to_display = yaml.dump(response['data'], default_flow_style=False, indent=2, sort_keys=False)
                 print(data_to_display)
             else:
+                data = response['data']
                 print('\n')
-                print('Cluster Name: {}'.format(data['cluster_name']))
-                print('API Server: {}'.format(data['host_url']))
+                print(f"Cluster Name: {data['cluster_name']}")
+                print(f"API Server: {data['host_url']}")
+                print(f'Alive Age: {data["alive_age"]}')
+                print(f'Since Last Sync: {data["last_sync_since"]}')
                 print('\n')
-    
+                # print(data)
                 # display onboard device 
                 onboard_devices = []
                 edge_nodes = []
@@ -217,13 +225,17 @@ class KuberosCli(object):
                 for node in data['cluster_node_set']:
                     # onboard computers
                     if node['kuberos_role'] == 'onboard':
+                        fleet_name = node.get('assigned_fleet_name', 'Unknown')
+                        if not fleet_name:
+                            fleet_name = 'N/A'
+                            
                         onboard_devices.append(
                             {
                                 'ROBOT_NAME': node.get('robot_name', None),
                                 'HOSTNAME': node['hostname'],
                                 'DEVICE_GROUP': node['device_group'],
                                 'AVAILABLE': node['is_available'],
-                                'FLEET': node.get('assigned_fleet_name', None),
+                                'FLEET': fleet_name,
                                 'PERIPHERALS': node.get('peripheral_device_name_list', None),})
                     
                     # Edge nodes (on-premise)        
@@ -255,25 +267,25 @@ class KuberosCli(object):
                 
                 # display data 
                 num_of_single_dash = 80
-                if len(onboard_devices) > 0: 
+                if len(onboard_devices) > 0:
                     print('Robot Onboard Computers')
                     print('-' * num_of_single_dash)
                     table = tabulate(onboard_devices, headers="keys", tablefmt='plain')
                     print(table)
                     print('\n')
-                if len(edge_nodes) > 0: 
+                if len(edge_nodes) > 0:
                     print('Edge Nodes')
                     print('-' * num_of_single_dash)
                     table = tabulate(edge_nodes, headers="keys", tablefmt='plain')
                     print(table)
                     print('\n')
-                if len(unassigned_nodes) > 0: 
+                if len(unassigned_nodes) > 0:
                     print('Unassigned Nodes')
                     print('-' * num_of_single_dash)
                     table = tabulate(unassigned_nodes, headers="keys", tablefmt='plain')
                     print(table)
                     print('\n')
-                if len(control_plane_nodes) > 0: 
+                if len(control_plane_nodes) > 0:
                     print('Control Plane Nodes')
                     print('-' * num_of_single_dash)
                     table = tabulate(control_plane_nodes, headers="keys", tablefmt='plain')
@@ -281,7 +293,7 @@ class KuberosCli(object):
                     print('\n')
         else:
             print('error')
-    
+
     def cluster_update(self, *args):
         """
         Update the inventory description
