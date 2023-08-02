@@ -166,8 +166,6 @@ class KuberosCli(object):
                 'Alive Age': item["alive_age"],
                 'Last Sync': item['last_sync_since'],
                 'host_url': item['host_url'],
-                # 'uuid': item['uuid'],
-                # 'created_at': item['created_time'],
             } for item in data]
             
             table = tabulate(data_to_display, headers="keys", tablefmt='plain')
@@ -685,7 +683,7 @@ class KuberosCli(object):
         else:
             print('[ERROR] {}'.format(res['msg']))
     
-    def deployment_delete(self, *args):
+    def deployment_delete_deprecated(self, *args):
         """
         Subcommand to delete a deployment directly in database
         FOR DEVELOPMENT PURPOSES ONLY
