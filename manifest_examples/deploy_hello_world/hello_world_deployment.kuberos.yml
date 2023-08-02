@@ -27,8 +27,8 @@ rosModules:
       # args used in the launch file
       robot_ip: {UR_ROBOT.ROBOT_IP} # hardware specific parameters -> Uppercase
       ur_type: {UR_ROBOT.UR_TYPE}
-      use_sim: {launch_parameters.use_sim} # custom setup -> Lowercase 
-      use_rviz: {launch_parameters.use_rviz}
+      use_sim: {launch-parameters.use_sim} # custom setup -> Lowercase 
+      use_rviz: {launch-parameters.use_rviz}
 
     # To make this module reusable, you shouldn't change the rosmodule description
     # To use custom configuration, you can define your parameters in rosParameters/staticFiles section. 
@@ -40,7 +40,7 @@ rosModules:
       - name: launch-parameters
         type: yaml
         mountPath: /workspace/minimal_publisher/config
-        valueFrom: helloworld_launch_parameters    
+        valueFrom: helloworld-launch-parameters
 
     staticFiles: 
       - name: ml-weights-container
@@ -69,7 +69,7 @@ rosParamMap:
       use_sim: false
       use_rviz: false
 
-  - name: minimal-publisher-params_custom
+  - name: minimal-publisher-params-custom
     type: yaml
     path: /workspace/kuberoscli/ros_deployment/config_files_hello_world/helloworld.yml
   

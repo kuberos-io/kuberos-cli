@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # python
 import argparse
@@ -29,13 +29,15 @@ def print_helper(help_text):
 
 
 class KuberosCli(object):
-
+    """
+    KuberROS Comand Line Interface
+    """
     def __init__(self) -> None:
         self.parser = argparse.ArgumentParser(
             description='ROS Kubernetes Package Manager', 
             usage=help_texts.help_text_summary
         )
-        self.parser.add_argument('command', 
+        self.parser.add_argument('command',
                             # choices=["list", "create", "delete"],
                             help='Subcommand to run')
 
@@ -55,14 +57,14 @@ class KuberosCli(object):
         
         args = self.parser.parse_args(sys.argv[1:2])
         if not hasattr(self, args.command):
-            print('Unrecognized command: %s' % args.command)
+            print(f'Unrecognized command: {args.command}')
             self.print_helper()
-            exit(1)
+            sys.exit(1)
 
         if args.command == 'login':
             self.login()
         else:
-            self.config_path = ".kuberos.config" ## TODO change to ~/.kuberos/config
+            self.config_path = ".kuberos.config" # TODO change to ~/.kuberos/config
             self.load_config(self.config_path)
         
         # use dispatch pattern to invoke method with same name
@@ -77,6 +79,8 @@ class KuberosCli(object):
         args: 
             - file: deployment description file
         ./kuberos.py deploy -f /workspace/kuberoscli/ros_deployment/hello_world_single_robot.kuberos.yml
+ 
+        # TODO: Read the deployment ros parameter yaml file and send the request to API server
         """
         parser = argparse.ArgumentParser(
             description='Deploy an application'
@@ -84,7 +88,7 @@ class KuberosCli(object):
         parser.add_argument('-f', required=True, help='YAML file')
         args = parser.parse_args(args)
         
-        # load yaml file 
+        # load yaml file
         try:
             with open(args.f, "r") as f:
                 files = {'deployment_yaml': f}
@@ -95,14 +99,14 @@ class KuberosCli(object):
                     files=files,
                     auth_token=self.auth_token
                 )
-                if res['success'] == True:
+                if res['success'] is True:
                     print(res)
                 else:
                     print(res)
                     # print('Status: {} \n Message: '.format(data['status'], data['msg']))
         except FileNotFoundError:
-            print("Deployment description file: {} not found.".format(args.f))
-            exit(1)
+            print(f'Deployment description file: {args.f} not found.')
+            sys.exit(1)
 
     def delete(self, *args):
         """
@@ -123,35 +127,42 @@ class KuberosCli(object):
         if res['status'] == 'success':
             print(res)
         else:
-            print('[ERROR] {}'.format(res['msg']))
+            print(f"[ERROR] {res['msg']}")
 
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
+        """
+        Cluster management command
+        """
         parser = argparse.ArgumentParser(
-            description='Manage clusters', 
+            description='Manage clusters',
             usage=help_texts.cluster,
         )
         parser.add_argument('subcommand', help='Subcommand to run')
         args = parser.parse_args(args[:1])
         # call subcommand
         if not hasattr(self, f'cluster_{args.subcommand}'):
-            print('Unrecognized command: %s' % args.subcommand)
-            exit(1)
+            print(f'[Error] -- Unrecognized command: {args.subcommand}')
+            sys.exit(1)
         getattr(self, f'cluster_{args.subcommand}')(*sys.argv[3:])
     
     def cluster_list(self, *args):
+        """
+        List all clusters that the user has access to
+        """
         parser = argparse.ArgumentParser(
             description='List the registered clusters in kuberos'
         )
         parser.add_argument('--verbose', help='Verbose output')
         args = parser.parse_args(args)
-        # call api server 
+        # call api server
         success, data = self.__api_call('GET', f'{self.api_server}/{endpoints.CLUSTER}', 
                                         auth_token=self.auth_token)
         if success:
             # formatted = json.dumps(data, sort_keys=False, indent=4)
             data_to_display = [{
                 'cluster_name': item['cluster_name'],
+                'Type': item['cluster_type'],
                 'host_url': item['host_url'],
                 'uuid': item['uuid'],
                 # 'created_at': item['created_time'],
@@ -316,26 +327,34 @@ class KuberosCli(object):
         parser = argparse.ArgumentParser(
             description='Add a new cluster to Kuberos Plattform'
         )
-        parser.add_argument('cluster_name', help='Name of the cluster')
+        parser.add_argument('--cluster_name', help='Name of the cluster')
         parser.add_argument('--host', help='Host URL of Kubernetes API server')
         parser.add_argument('--token', help='Admin service token')
         parser.add_argument('--ca_cert', help='Path of CA certificate')
+        parser.add_argument('-f', help='File path of cluster registration')
         args = parser.parse_args(args)
-        # call api server
-        try:
-            with open(args.ca_cert, "r") as f:
-                files = {'ca_crt_file': f}
-                data = {
-                    'name': args.cluster_name,
+        if args.f: 
+            cluster = self.parse_cluster_registration_yaml(args.f)
+            ca_file_path = cluster.pop('ca_cert')
+        else: 
+            cluster = {
+                    'cluster_name': args.cluster_name,
+                    'cluster_type': 'k3s',
                     'host_url': args.host,
                     'service_token_admin': args.token,
                 }
+            ca_file_path = args.ca_cert
+
+        # call api server
+        try:
+            with open(ca_file_path, "r") as f:
+                files = {'ca_crt_file': f}
                 # call api server 
                 _, res = self.__api_call(
                     'POST',
                     f'{self.api_server}/{endpoints.CLUSTER}',
                     files=files,
-                    data=data,
+                    data=cluster,
                     auth_token=self.auth_token
                 )
                 if res['status'] == 'success':
@@ -343,10 +362,28 @@ class KuberosCli(object):
                 else:
                     print(res)
         except FileNotFoundError:
-            print("CA file: {} not found.".format(args.ca_cert))
-            exit(1)
-            
+            print(f'CA file: {args.ca_cert} not found.')
+            sys.exit(1)
     
+    @staticmethod
+    def parse_cluster_registration_yaml(yaml_file):
+        try:
+            with open(yaml_file, 'r') as f: 
+                manifest = yaml.safe_load(f)
+                meta_data = manifest['metadata']
+                cluster = {
+                    'cluster_name': meta_data['name'],
+                    'cluster_type': meta_data['clusterType'],
+                    'host_url': meta_data['apiServer'],
+                    'ca_cert': meta_data['caCert'],
+                    'service_token_admin': meta_data['serviceTokenAdmin'],
+                }
+                return cluster 
+        except FileNotFoundError:
+            print(f'Cluster registration file: {yaml_file} not found.')
+            sys.exit(1)
+        
+
     def cluster_reset(self, *args):
         """
         Reset the cluster that managed by KubeROS

@@ -1,5 +1,5 @@
 minimal_publisher:
   ros__parameters:
     topic: 'world'
-    author: 'humble'
+    talker: 'humble'
     content: 'launched by kuberos'
