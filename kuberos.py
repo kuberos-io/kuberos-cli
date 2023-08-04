@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # python
+import os
 import argparse
 import argcomplete
 import requests
@@ -64,8 +65,7 @@ class KuberosCli(object):
         if args.command == 'login':
             self.login()
         else:
-            self.config_path = ".kuberos.config" # TODO change to ~/.kuberos/config
-            self.load_config(self.config_path)
+            self.load_config()
         
         # use dispatch pattern to invoke method with same name
         getattr(self, args.command)(*sys.argv[2:])
@@ -194,14 +194,15 @@ class KuberosCli(object):
                                             'sync': args.sync
                                         })
         if success:
-            if response['res'] == 'failed':
-                print("Synchronize cluster failed.")
-                print(f'Reason: {response["msg"]}')
+            if response['status'] == 'failed':
+                print("Retrieve cluster status failed.")
+                print("Errors: ")
+                print(response['errors'])
                 sys.exit(1)
             if args.output == 'json':
                 json_str = json.dumps(response['data'], indent=4)
                 print(json_str)
-            elif args.output == 'yaml':  
+            elif args.output == 'yaml':
                 data_to_display = yaml.dump(response['data'], default_flow_style=False, indent=2, sort_keys=False)
                 print(data_to_display)
             else:
@@ -420,7 +421,7 @@ class KuberosCli(object):
             print('error')
         
     
-    def cluster_remove(self, *args):
+    def cluster_delete(self, *args):
         """
         Subcommand to remove the cluster managed by KubeROS
         """
@@ -801,21 +802,38 @@ class KuberosCli(object):
             resp.raise_for_status()
             data = resp.json()
             return True, data
-        except requests.exceptions.HTTPError as e:
-            error_type = resp.status_code
-            if error_type == 401:
-                print("Unauthorized, login is required. The previous cached token is expired.")
-            exit(1)
-        except requests.exceptions.RequestException as e:
-            print("[ConnectionError] Can not connect to the API server. Please check your network and kuberos config.")
-            exit(1)
-        except Exception as e:
-            print(e)
-            exit(1)
-    
-    
+        except requests.exceptions.HTTPError:
+            err_type = resp.status_code
+
+            if err_type == 401:
+                # Unauthorized
+                print("[Unauthorized] Login is required. The cached token is expired.")
+
+            if err_type == 404:
+                # Requested resource not found
+                print("[Not Found] Check the resource name and try again.")
+            sys.exit(1)
+
+        except requests.exceptions.RequestException:
+            # Connection error
+            print("[ConnectionError] Can not connect to the API server. \
+                    Please check your network and kuberos config.")
+            sys.exit(1)
+
+        except Exception as exc:
+            # Unknown error
+            print("[Unknown Error]", exc)
+            sys.exit(1)
+
+
     ### CONFIGURATION ###
     def login(self, *args):
+        """
+        Login to KubeROS API server
+        KubeROS uses the token based authentication.
+        The token is renewed automatically after connecting to the API server.
+        After 24 hours without any request, the token will be expired.
+        """
         # load current config to get the apt server address 
         with open(".kuberos.config", "r") as f:
             cached_config = yaml.safe_load(f)
@@ -839,7 +857,7 @@ class KuberosCli(object):
                                 )
         if not success:
             print("Login failed")
-            exit(1)
+            sys.exit(1)
 
         # update
         config = {} if cached_config is None else cached_config
@@ -850,14 +868,25 @@ class KuberosCli(object):
         with open(".kuberos.config", "w") as f:
             yaml.safe_dump(config, f, default_flow_style=False)
         print('Login success')
-        exit(0)
+        sys.exit(0)
+
+    def load_config(self):
+        """
+        Load the cached authentication token and api server address
+        """
+        # get the environment variable
+        config_path = os.environ.get('KUBEROS_CONFIG', None)
+        if config_path is None:
+            config_path = '.kuberos.config'
         
-    def load_config(self, path):
+        # load the config file
         try:
-            with open(".kuberos.config", "r") as f:
+            with open(config_path, "r") as f:
                 config = yaml.safe_load(f)
         except FileNotFoundError:
-            print("Config file not found.")
+            print(f'Config file not found in path: {config_path}')
+        
+        # set parameters
         self.api_server = config['api_server_address']
         self.auth_token = config['token']
 
