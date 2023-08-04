@@ -29,7 +29,7 @@ def print_helper(help_text):
     return inner
 
 
-class KuberosCli(object):
+class KuberosCli():
     """
     KuberROS Comand Line Interface
     """
@@ -66,7 +66,7 @@ class KuberosCli(object):
             self.login()
         else:
             self.load_config()
-        
+
         # use dispatch pattern to invoke method with same name
         getattr(self, args.command)(*sys.argv[2:])
 
@@ -506,9 +506,11 @@ class KuberosCli(object):
         if success:
             data_to_display = [{
                 'Name': item['fleet_name'],
+                'Status': item['fleet_status'],
+                'Alive Age': item['alive_age'],
+                'Healthy': item['healthy'],
                 'Main Cluster': item['k8s_main_cluster_name'],
-                'UUID': item['uuid'],
-                'Created at': item['created_time'],
+                'Created since': item['created_since'],
             } for item in data]
             table = tabulate(data_to_display, headers="keys", tablefmt='plain')
             print(table)
