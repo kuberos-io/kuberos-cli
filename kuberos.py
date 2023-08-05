@@ -887,7 +887,21 @@ class KuberosCli():
             yaml.safe_dump(config, f, default_flow_style=False)
         print('Login success')
         sys.exit(0)
-    
+
+    def logout(self, *args):
+        """
+        Logout from KubeROS API server
+        """
+        parser = argparse.ArgumentParser(
+            description='Logout from KubeROS API server'
+        )
+        args = parser.parse_args(args)
+        success, response = self.__api_call('POST',
+                                        f'{self.api_server}/{endpoints.LOGOUT}',
+                                        auth_token=self.auth_token)
+        print(success, response)
+
+
     def register(self, *args):
         """ Register a new user
         Test: 
