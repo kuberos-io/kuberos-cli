@@ -500,10 +500,11 @@ class KuberosCli():
         parser.add_argument('--verbose', help='Verbose output')
         args = parser.parse_args(args)
         # call api server 
-        success, data = self.__api_call('GET', 
+        success, response = self.__api_call('GET', 
                                         f'{self.api_server}/{endpoints.FLEET}', 
                                         auth_token=self.auth_token)
         if success:
+            data = response['data']
             data_to_display = [{
                 'Name': item['fleet_name'],
                 'Status': item['fleet_status'],
@@ -528,28 +529,34 @@ class KuberosCli():
         parser.add_argument('fleet_name', help='Name of the fleet')
         parser.add_argument('-output', help='Output format (default is table. "yaml"/"dict")')
         args = parser.parse_args(args)
-        # call api server 
+        
+        # call api server
         url = f'{endpoints.FLEET}{args.fleet_name}/'
-        success, data = self.__api_call('GET', 
+        success, data = self.__api_call('GET',
                                         f'{self.api_server}/{url}',
                                         auth_token=self.auth_token)
-        
-        if success and data['success']:
+
+        if success and data['status'] == 'success':
             data = data['data']
             if args.output == 'json':
                 json_str = json.dumps(data, indent=4)
                 print(json_str)
             elif args.output == 'yaml':
-                data_to_display = yaml.dump(data, default_flow_style=False, indent=2, sort_keys=False)
+                data_to_display = yaml.dump(data, 
+                                            default_flow_style=False, 
+                                            indent=2, 
+                                            sort_keys=False)
                 print(data_to_display)
             else:
-                
+            # print fleet details
                 # print(data)
-                
-                print("Fleet Name: {}".format(data['fleet_name']))
-                print("Active: {}".format(data['active']))
-                print("Main Cluster: {}".format(data['k8s_main_cluster_name']))
-                print("Description: {}".format(data['description']))
+                print(f"Fleet Name: {data['fleet_name']}")
+                print(f"Healthy: {data['healthy']}")
+                print(f"Fleet status: {data['fleet_status']}")
+                print(f"Alive Age: {data['alive_age']}")
+                print(f"Main Cluster: {data['k8s_main_cluster_name']}")
+                print(f"Description: {data['description']}")
+                print(f"Created since: {data['created_since']}")
                 print('='*40)
                 data_to_display = [{
                         'Robot Name': item['robot_name'],
@@ -560,11 +567,12 @@ class KuberosCli():
                         'Shared Resource': item['shared_resource'],
                     } for item in data['fleet_node_set']]
                 table = tabulate(data_to_display, headers="keys", tablefmt='plain')
-                print(table)             
+                print(table)
         else:
-            print('error')
-            print(data['msg'])
-    
+            print(f"Response: {data['status']}")
+            print(f"Error: {data['errors']}")
+            print(f"Message: {data['msgs']}")
+
     def fleet_disband(self, *args):
         """
         Subcommand to disband the fleet.
@@ -574,9 +582,9 @@ class KuberosCli():
         )
         parser.add_argument('fleet_name', help='Name of the fleet')
         args = parser.parse_args(args)
-        # call api server 
-        url = f'{endpoints.FLEET}{args.fleet_name}/'  
-        success, data = self.__api_call('DELETE', 
+        # call api server
+        url = f'{endpoints.FLEET}{args.fleet_name}/'
+        success, data = self.__api_call('DELETE',
                                         f'{self.api_server}/{url}',
                                         auth_token=self.auth_token)
         if success:
@@ -807,13 +815,21 @@ class KuberosCli():
         except requests.exceptions.HTTPError:
             err_type = resp.status_code
 
+            if err_type == 400:
+                # Bad request
+                print("[Bad Request '400'] Please check the request parameters.")
+            
             if err_type == 401:
                 # Unauthorized
-                print("[Unauthorized] Login is required. The cached token is expired.")
+                print("[Unauthorized '401'] Login is required. The cached token is expired.")
 
             if err_type == 404:
                 # Requested resource not found
-                print("[Not Found] Check the resource name and try again.")
+                print("[Not Found '404'] Check the resource name and try again.")
+
+            if err_type == 500:
+                print("[Internal Server Error '500'] Please contact the administrator.")
+
             sys.exit(1)
 
         except requests.exceptions.RequestException:
@@ -830,28 +846,28 @@ class KuberosCli():
 
     ### CONFIGURATION ###
     def login(self, *args):
-        """
-        Login to KubeROS API server
+        """Login to KubeROS API server
+        
         KubeROS uses the token based authentication.
         The token is renewed automatically after connecting to the API server.
         After 24 hours without any request, the token will be expired.
         """
-        # load current config to get the apt server address 
+        # load current config to get the apt server address
         with open(".kuberos.config", "r") as f:
             cached_config = yaml.safe_load(f)
-        
+
         api_server_address = None if cached_config is None else cached_config['api_server_address']
         if api_server_address is None:
             api_server_address = input("KubeROS API server address: ")
         else:
-            print('login to KubeROS API server: {}'.format(cached_config['api_server_address']))
+            print(f"login to KubeROS API server: {cached_config['api_server_address']}")
             print('If you want to change the API server address, please run \n\
                 kuberos config set api-server <api-server-address>')
 
         username = input("Username: ")
         password = getpass.getpass("Password: ")
 
-        success, data = self.__api_call('POST', 
+        success, data = self.__api_call('POST',
                                f'{api_server_address}/{endpoints.LOGIN}', 
                                data={
                                     'username': username,
@@ -871,6 +887,33 @@ class KuberosCli():
             yaml.safe_dump(config, f, default_flow_style=False)
         print('Login success')
         sys.exit(0)
+    
+    def register(self, *args):
+        """ Register a new user
+        Test: 
+            python kuberos.py register --username test --password test --email test@test.dummy
+        """
+
+        parser = argparse.ArgumentParser(
+            description='Register a new user'
+        )
+        parser.add_argument('--username', help='Username')
+        parser.add_argument('--password', help='Password')
+        parser.add_argument('--email', help='Email')
+
+        args = parser.parse_args(args)
+
+        # call api server
+        success, response = self.__api_call('POST',
+                                            f'{self.api_server}/{endpoints.REGISTER}',
+                                            data={
+                                                'username': args.username,
+                                                'password': args.password,
+                                                'email': args.email,
+                                            })
+        print(f'Success: {success}')
+        print(response)
+        
 
     def load_config(self):
         """

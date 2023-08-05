@@ -4,7 +4,7 @@ DEPLOYING = 'api/v1/deploying/deploy_rosmodule/'
 
 # Auth
 LOGIN = 'api/v1/auth/user_login/'
-
+REGISTER = 'api/v1/auth/user_register/'
 
 # Fleet
 FLEET = 'api/v1/fleet/manage_fleet/'
