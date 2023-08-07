@@ -92,18 +92,16 @@ class KuberosCli():
         try:
             with open(args.f, "r") as f:
                 files = {'deployment_yaml': f}
-                # call api server 
-                _, res = self.__api_call(
+                # call api server
+                _, response = self.__api_call(
                     'POST',
                     f'{self.api_server}/{endpoints.DEPLOYING}',
                     files=files,
                     auth_token=self.auth_token
                 )
-                if res['success'] is True:
-                    print(res)
-                else:
-                    print(res)
-                    # print('Status: {} \n Message: '.format(data['status'], data['msg']))
+                print (response)
+
+                # print('Status: {} \n Message: '.format(data['status'], data['msg']))
         except FileNotFoundError:
             print(f'Deployment description file: {args.f} not found.')
             sys.exit(1)
@@ -121,13 +119,10 @@ class KuberosCli():
         args = parser.parse_args(args)
 
         url = '{}{}/'.format(endpoints.DEPLOYING, args.deployment_name)
-        success, res = self.__api_call('DELETE', 
+        success, response = self.__api_call('DELETE', 
                                        f'{self.api_server}/{url}', 
                                        auth_token=self.auth_token)
-        if res['status'] == 'success':
-            print(res)
-        else:
-            print(f"[ERROR] {res['msg']}")
+        print(response)
 
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
@@ -156,18 +151,20 @@ class KuberosCli():
         parser.add_argument('--verbose', help='Verbose output')
         args = parser.parse_args(args)
         # call api server
-        success, data = self.__api_call('GET', f'{self.api_server}/{endpoints.CLUSTER}', 
+        success, response = self.__api_call('GET', f'{self.api_server}/{endpoints.CLUSTER}', 
                                         auth_token=self.auth_token)
         if success:
-            # formatted = json.dumps(data, sort_keys=False, indent=4)
+            data = response['data']
             data_to_display = [{
-                'cluster_name': item['cluster_name'],
-                'Type': item['cluster_type'],
-                'Alive Age': item["alive_age"],
-                'Last Sync': item['last_sync_since'],
-                'host_url': item['host_url'],
+                'Cluster name': item['cluster_name'],
+                'Status': item['cluster_status'],
+                'Alive age': item["alive_age"],
+                'Last sync': item['last_sync_since'],
+                'Dist.': item['distribution'],
+                'Env.': item['env_type'],
+                'API server': item['host_url'],
             } for item in data]
-            
+
             table = tabulate(data_to_display, headers="keys", tablefmt='plain')
             print(table)
         else:
@@ -350,7 +347,7 @@ class KuberosCli():
         else: 
             cluster = {
                     'cluster_name': args.cluster_name,
-                    'cluster_type': 'k3s',
+                    'distribution': 'k3s',
                     'host_url': args.host,
                     'service_token_admin': args.token,
                 }
@@ -384,12 +381,12 @@ class KuberosCli():
                 meta_data = manifest['metadata']
                 cluster = {
                     'cluster_name': meta_data['name'],
-                    'cluster_type': meta_data['clusterType'],
+                    'distribution': meta_data['distribution'],
                     'host_url': meta_data['apiServer'],
                     'ca_cert': meta_data['caCert'],
                     'service_token_admin': meta_data['serviceTokenAdmin'],
                 }
-                return cluster 
+                return cluster
         except FileNotFoundError:
             print(f'Cluster registration file: {yaml_file} not found.')
             sys.exit(1)
