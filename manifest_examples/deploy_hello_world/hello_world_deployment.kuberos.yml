@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ApplicationDeployment
 metadata:
-  name: hello-world-humble-dev
+  name: hello-world-humble-dev-2
   rosVersion: humble
   appVersion: dev-1
   targetFleet: bw1-fleet
@@ -10,46 +10,50 @@ metadata:
 
 rosModules:
   - name: hello-world-talker
-    image: <Container Registry>/ros2_basic_examples/hello_world:v1-param
-    entrypoint: ["ros2 run examples_rclpy_minimal_publisher publisher_local_function"]
+    image: metagoto/ros2-basic-examples:v2-param
+    entrypoint: ["ros2 launch examples_rclpy_minimal_publisher publisher.launch.py"]
+    # entrypoint: ["ros2 run examples_rclpy_minimal_publisher publisher_local_function"]
 
     preference: [onboard] # Preference for scheduler
     
+    launchParameters: # Placeholder -> Not used in this example
+      # args used in the launch file
+      robot_ip: {SIM_ARM.ROBOT_IP} # hardware specific parameters -> Uppercase
+      init_topic: {launch_parameters.init_topic}
+
     requirements: 
       latency: 50ms
       dynamicRescheduling: false
       privilege: true
-      peripheral: ['ur-robot'] 
+      peripheral: ['sim-arm'] 
       nvidia: false # placeholder for the future
       containerRuntime: containerd/docker # placeholder for the future
-
-    launchParameters: # Placeholder -> Not used in this example
-      # args used in the launch file
-      robot_ip: {UR_ROBOT.ROBOT_IP} # hardware specific parameters -> Uppercase
-      ur_type: {UR_ROBOT.UR_TYPE}
-      use_sim: {launch-parameters.use_sim} # custom setup -> Lowercase 
-      use_rviz: {launch-parameters.use_rviz}
 
     # To make this module reusable, you shouldn't change the rosmodule description
     # To use custom configuration, you can define your parameters in rosParameters/staticFiles section. 
     # In KubeROS Abstraction: code / configuration / file are separated!
+    # DON'T MODIFY THE ROSMODULE, MODIFY THE ROSPARAMMAP!
     rosParameters: 
-      - name: minimal-publisher-params 
+      # launch args
+      - name: launch_parameters
         type: key-value
-        valueFrom: minimal-publisher-params-custom
-      - name: launch-parameters
-        type: yaml
-        mountPath: /workspace/minimal_publisher/config
         valueFrom: helloworld-launch-parameters
 
+      # yaml file to parameter server
+      - name: minimal_publisher_params
+        type: yaml
+        valueFrom: publisher-param.yaml
+        mountPath: /workspace/config/minimal_publisher
+        
+
     staticFiles: 
-      - name: ml-weights-container
+      - name: ml_weights_container
         requiredBindType: container 
         hostpath: /workspace/configs/ml_model_weights
         valueFrom: ml-weights-container
 
   - name: hello-world-listener
-    image: <Container Registry>/ros2_basic_examples/hello_world:v0
+    image: metagoto/ros2-basic-examples:v2-param
     entrypoint: ["ros2 run examples_rclpy_minimal_subscriber subscriber_lambda"]
 
     preference: [edge, onboard] # Preference for scheduler
@@ -68,15 +72,16 @@ rosParamMap:
     data:
       use_sim: false
       use_rviz: false
+      init_topic: 'KuberROS'
 
-  - name: minimal-publisher-params-custom
+  - name: publisher-param.yaml
     type: yaml
-    path: /workspace/kuberoscli/ros_deployment/config_files_hello_world/helloworld.yml
+    path: /workspace/examples/hello_world/config_files/helloword_publisher_params.yml
   
 
 staticFileMap: 
   # Placeholder, not included in this test version
-  - name: ml-weights-for-mask-rcnn    
+  - name: ml-weights-container
     # The file will be uploaded to the target cluster node
     bindType: container | upload | pv
     path: config_files/ml_model_weights.dummy
