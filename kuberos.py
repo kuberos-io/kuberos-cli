@@ -118,11 +118,13 @@ class KuberosCli():
         parser.add_argument('deployment_name', help='Name of the deployment')
         args = parser.parse_args(args)
 
-        url = '{}{}/'.format(endpoints.DEPLOYING, args.deployment_name)
-        success, response = self.__api_call('DELETE', 
+        url = f'{endpoints.DEPLOYING}{args.deployment_name}/'
+        success, response = self.__api_call('DELETE',
                                        f'{self.api_server}/{url}', 
                                        auth_token=self.auth_token)
+
         print(response)
+
 
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
@@ -942,7 +944,7 @@ class KuberosCli():
         except FileNotFoundError:
             print(f'Config file not found in path: {config_path}')
         
-        # set parameters
+    # set parameters
         self.api_server = config['api_server_address']
         self.auth_token = config['token']
 
@@ -951,8 +953,8 @@ class KuberosCli():
         # default, using 
         # TODO
         pass
-        
-    
+
+
     ### INFO ###
     @print_helper(help_text=help_texts.info)
     def info(self, *args):
@@ -960,13 +962,13 @@ class KuberosCli():
             description='Display the Kuberos main api server information', 
             usage=help_texts.info
         )
-        
+
     def print_helper(self):
         print(help_texts.help_text_summary)
 
     def autocomplete(self):
         argcomplete.autocomplete(self.parser)
-        
+
 
 def main ():
     cli = KuberosCli()
