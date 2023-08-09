@@ -328,11 +328,11 @@ class KuberosCli():
             exit(1)
     
     
-    def cluster_register(self, *args):
+    def cluster_create(self, *args):
         """
         Add new cluster to be managed by KubeROS
         Test command: 
-        python kuberos.py cluster register bw1-prod-cluster --host https://193.196.37.240:6443 --ca_cert /workspace/kuberos/pykuberos/config/ca_bw1.crt --token eyJhbGciOiJSUzI1NiIsImtpZCI6ImNwUVQ2ZmpzRDNJUVR4MFE1aEtvTzdCdUJDVnhxcGMtSW8zNmpId1BfQW8ifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6Imt1YmVyb3Mtc2VydmljZS1hY2NvdW50LXRva2VuLWh2am5oIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6Imt1YmVyb3Mtc2VydmljZS1hY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiODU5NTJiOTQtYWZjYi00YTJmLWE2ZjYtMWEwMWExMzUwYzVkIiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmRlZmF1bHQ6a3ViZXJvcy1zZXJ2aWNlLWFjY291bnQifQ.bkfWZOqN__DspAXQw5yzX0TTYbGrfhbYOJZKM7AMWKD2tsJduHkuK49tdpSId2_RZYOIAgHfvVF9Q7U9LMEtC5aTMP1ruQiGYqUa0S-emOqDkw_3K1aOmU4L4m6zXqZrCX_sTMJKJtiup6mfWT6dFqPe96o1_kWomiOF2zWzuaYVTRlukpnrXB2FPPC9uz3_ojyUPmur4GAr1xbTgA6UYAOAtPIf_VfM-Wq_OU4ntfncXVbqa5kktkSwr-vkRZktH0juEuz601F8b-2EyckXcynFF1mY3NNURb1LAreiMSltsqaSkJWNlr8ybCAaVZV9LslpNcjbeRmNOmjwRZq0Hg
+        python kuberos.py cluster create bw1-prod-cluster --host https://193.196.37.240:6443 --ca_cert /workspace/kuberos/pykuberos/config/ca_bw1.crt --token eyJhbGciOiJSUzI1NiIsImtpZCI6ImNwUVQ2ZmpzRDNJUVR4MFE1aEtvTzdCdUJDVnhxcGMtSW8zNmpId1BfQW8ifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6Imt1YmVyb3Mtc2VydmljZS1hY2NvdW50LXRva2VuLWh2am5oIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6Imt1YmVyb3Mtc2VydmljZS1hY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiODU5NTJiOTQtYWZjYi00YTJmLWE2ZjYtMWEwMWExMzUwYzVkIiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmRlZmF1bHQ6a3ViZXJvcy1zZXJ2aWNlLWFjY291bnQifQ.bkfWZOqN__DspAXQw5yzX0TTYbGrfhbYOJZKM7AMWKD2tsJduHkuK49tdpSId2_RZYOIAgHfvVF9Q7U9LMEtC5aTMP1ruQiGYqUa0S-emOqDkw_3K1aOmU4L4m6zXqZrCX_sTMJKJtiup6mfWT6dFqPe96o1_kWomiOF2zWzuaYVTRlukpnrXB2FPPC9uz3_ojyUPmur4GAr1xbTgA6UYAOAtPIf_VfM-Wq_OU4ntfncXVbqa5kktkSwr-vkRZktH0juEuz601F8b-2EyckXcynFF1mY3NNURb1LAreiMSltsqaSkJWNlr8ybCAaVZV9LslpNcjbeRmNOmjwRZq0Hg
         """
         parser = argparse.ArgumentParser(
             description='Add a new cluster to Kuberos Plattform'
@@ -430,8 +430,8 @@ class KuberosCli():
         parser.add_argument('cluster_name', help='Cluster name')
         args = parser.parse_args(args)
         # call api server 
-        url = f'{endpoints.CLUSTER}{args.cluster_name}/'  
-        success, data = self.__api_call('DELETE', 
+        url = f'{endpoints.CLUSTER}{args.cluster_name}/'
+        success, data = self.__api_call('DELETE',
                                         f'{self.api_server}/{url}',
                                         auth_token=self.auth_token)
         if success:
