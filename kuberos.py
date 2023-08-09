@@ -48,14 +48,14 @@ class KuberosCli():
         self.parser.add_argument('--kube-api-server', help='K8s Api server IP and Port')
         self.parser.add_argument('--kube-api-key', help='api-key for authorization')
         self.parser.add_argument('--kube-ssl-ca', help='ca certificate')
-        
+
         argcomplete.autocomplete(self.parser)
-        
+
         # print helper if the supplied subcommand not found.
         if len(sys.argv) == 1:
             self.print_helper()
             sys.exit(1)
-        
+
         args = self.parser.parse_args(sys.argv[1:2])
         if not hasattr(self, args.command):
             print(f'Unrecognized command: {args.command}')
@@ -87,7 +87,7 @@ class KuberosCli():
         )
         parser.add_argument('-f', required=True, help='YAML file')
         args = parser.parse_args(args)
-        
+
         # load yaml file
         try:
             with open(args.f, "r") as f:
@@ -100,8 +100,7 @@ class KuberosCli():
                     auth_token=self.auth_token
                 )
                 print (response)
-
-                # print('Status: {} \n Message: '.format(data['status'], data['msg']))
+                
         except FileNotFoundError:
             print(f'Deployment description file: {args.f} not found.')
             sys.exit(1)
@@ -122,10 +121,73 @@ class KuberosCli():
         success, response = self.__api_call('DELETE',
                                        f'{self.api_server}/{url}', 
                                        auth_token=self.auth_token)
-
         print(response)
 
 
+    def status(self, *args):
+        """
+        Command to get the details of a deployment
+        """
+        parser = argparse.ArgumentParser(
+            description='Get the details of a deployment'
+        )
+        parser.add_argument('deployment_name', help='Name of the deployment')
+        args = parser.parse_args(args)
+        # call api server
+        url = f'{endpoints.DEPLOYMENT}{args.deployment_name}/'
+        success, res = self.__api_call('GET',
+                                        f'{self.api_server}/{url}',
+                                        auth_token=self.auth_token)
+        if res['status'] == 'success':
+            data = res['data']
+
+            # meta info
+            print(f"Deployment Name: {data['name']}")
+            print(f"Status: {data['status']}")
+            print(f"Fleet: {data['fleet_name']}")
+            print(f"Running Since: {data['running_since']}")
+
+            # dep jobs summary
+            num_of_single_dash = 60
+            print('Deployment Jobs Summary')
+            print('-' * num_of_single_dash)
+            dep_job_set = data['deployment_job_set']
+            data_to_display = [{
+                        'Robot Name': job['robot_name'],
+                        'Job Phase': job['job_phase'],
+                        'Pods': len(job['all_pods_status']),
+                        'Services': len(job['all_svcs_status']),
+                    } for job in dep_job_set]
+            table = tabulate(data_to_display, headers="keys", tablefmt='plain')
+            print(table)
+
+            # detailed job status
+            print('\n')
+            i = 0
+            for job in dep_job_set:
+                i += 1
+                print(f"Deployment Job Nr. {i}")
+                print(f"Robot Name: {job['robot_name']}")
+                print(f"Job Phase: {job['job_phase']}")
+                print('-' * num_of_single_dash)
+
+                data_to_display = [{
+                        'Resource Name': pod['name'],
+                        'Type': 'Pod',
+                        'Status': pod['status'],
+                    } for pod in job['all_pods_status']]
+                data_to_display += [{
+                        'Resource Name': svc['name'],
+                        'Type': 'Service',
+                        'Status': svc['status'],
+                } for svc in job['all_svcs_status']]
+
+                table = tabulate(data_to_display, headers="keys", tablefmt='plain')
+                print(table)
+
+        else:
+            print(res)
+    
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
         """
@@ -630,69 +692,8 @@ class KuberosCli():
             print(table)
         else:
             print('error')
-    
-    def deployment_status(self, *args):
-        """
-        Subcommand to get the details of a deployment
-        """
-        parser = argparse.ArgumentParser(
-            description='Get the details of a deployment'
-        )
-        parser.add_argument('deployment_name', help='Name of the deployment')
-        args = parser.parse_args(args)
-        # call api server 
-        url = '{}{}/'.format(endpoints.DEPLOYMENT, args.deployment_name)
-        success, res = self.__api_call('GET', 
-                                        f'{self.api_server}/{url}',
-                                        auth_token=self.auth_token)
-        if res['status'] == 'success':
-            # meta info
-            print("Deployment Name: {}".format(res['data']['name']))
-            print("Status: {}".format(res['data']['status']))
-            print("Fleet: {}".format(res['data']['fleet_name']))
-            print("Running Since: {}\n".format(res['data']['running_since']))
+
             
-            # dep jobs summary
-            num_of_single_dash = 60
-            print('Deployment Jobs Summary')
-            print('-' * num_of_single_dash)
-            dep_job_set = res['data']['deployment_job_set']
-            data_to_display = [{
-                        'Robot Name': job['robot_name'],
-                        'Job Phase': job['job_phase'],
-                        'Pods': len(job['all_pods_status']),
-                        'Services': len(job['all_svcs_status']),
-                    } for job in dep_job_set]
-            table = tabulate(data_to_display, headers="keys", tablefmt='plain')
-            print(table)
-            
-            # detailed job status
-            print('\n')
-            i = 0
-            for job in dep_job_set:
-                i += 1
-                print("Deployment Job Nr. {}".format(i))
-                print("Robot Name: {}".format(job['robot_name']))
-                print("Job Phase: {}".format(job['job_phase']))
-                print('-' * num_of_single_dash)
-                data_to_display = [{
-                        'Resource Name': pod['name'],
-                        'Type': 'Pod',
-                        'Status': pod['status'],
-                    } for pod in job['all_pods_status']]
-                data_to_display += [{
-                        'Resource Name': svc['name'],
-                        'Type': 'Service',
-                        'Status': svc['status'],
-                } for svc in job['all_svcs_status']]
-                table = tabulate(data_to_display, headers="keys", tablefmt='plain')
-                print(table)
-            
-            # data_to_display = yaml.dump(res['data'], default_flow_style=False, indent=2, sort_keys=False)
-            # print(data_to_display)
-        else:
-            print('[ERROR] {}'.format(res['msg']))
-    
     def deployment_delete_deprecated(self, *args):
         """
         Subcommand to delete a deployment directly in database
