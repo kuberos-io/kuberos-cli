@@ -507,8 +507,8 @@ class KuberosCli():
             print(json_str)
         else:
             print('error')
-        
-    
+
+
     def cluster_delete(self, *args):
         """
         Subcommand to remove the cluster managed by KubeROS
@@ -528,7 +528,7 @@ class KuberosCli():
             print(json_str)
         else:
             print('error')
-            
+
     ################################################
     ###            FLEET MANAGEMENT              ###
     ################################################
@@ -544,19 +544,18 @@ class KuberosCli():
             print('Unrecognized command: %s' % args.subcommand)
             exit(1)
         getattr(self, f'fleet_{args.subcommand}')(*sys.argv[3:])    
-    
-    
+
+
     def fleet_create(self, *args):
         """
         Create fleet from a fleet manifest file
-        ./kuberos.py fleet create -f /workspace/kuberoscli/fleet_description/fleet_bw0.v1.kuberos.yaml
         """
         parser = argparse.ArgumentParser(
             description='Create a fleet with Fleet Description'
         )
         parser.add_argument('-f', help='File path of fleet manifest')
         args = parser.parse_args(args)
-        
+
         try: 
             with open(args.f, 'r') as f:
                 files = {'fleet_manifest': f}
@@ -572,11 +571,11 @@ class KuberosCli():
                     auth_token=self.auth_token
                 )
                 print(res)
-                
+
         except FileNotFoundError:
-            print("Fleet manifest file: {} not found.".format(args.f))
-            exit(1)
-    
+            print(f'Fleet manifest file: {args.f} not found.')
+            sys.exit(1)
+
     def fleet_list(self, *args):
         """
         Subcommand to get the list of fleets
@@ -587,7 +586,7 @@ class KuberosCli():
         )
         parser.add_argument('--verbose', help='Verbose output')
         args = parser.parse_args(args)
-        # call api server 
+        # call api server
         success, response = self.__api_call('GET', 
                                         f'{self.api_server}/{endpoints.FLEET}', 
                                         auth_token=self.auth_token)
@@ -605,7 +604,7 @@ class KuberosCli():
             print(table)
         else:
             print('error')
-    
+
     def fleet_status(self, *args):
         """
         Subcommand to get the details of a fleet
@@ -617,7 +616,7 @@ class KuberosCli():
         parser.add_argument('fleet_name', help='Name of the fleet')
         parser.add_argument('-output', help='Output format (default is table. "yaml"/"dict")')
         args = parser.parse_args(args)
-        
+
         # call api server
         url = f'{endpoints.FLEET}{args.fleet_name}/'
         success, data = self.__api_call('GET',
@@ -630,9 +629,9 @@ class KuberosCli():
                 json_str = json.dumps(data, indent=4)
                 print(json_str)
             elif args.output == 'yaml':
-                data_to_display = yaml.dump(data, 
-                                            default_flow_style=False, 
-                                            indent=2, 
+                data_to_display = yaml.dump(data,
+                                            default_flow_style=False,
+                                            indent=2,
                                             sort_keys=False)
                 print(data_to_display)
             else:
@@ -680,7 +679,7 @@ class KuberosCli():
             print(json_str)
         else:
             print('error')
-    
+
     ### DEPLOYMENT ###
     def deployment(self, *args):
         parser = argparse.ArgumentParser(
@@ -691,13 +690,12 @@ class KuberosCli():
         args = parser.parse_args(args[:1])
         # call subcommand
         if not hasattr(self, f'deployment_{args.subcommand}'):
-            print('Unrecognized command: %s' % args.subcommand)
-            exit(1)
+            print(f'Unrecognized command: {args.subcommand}')
+            sys.exit(1)
         getattr(self, f'deployment_{args.subcommand}')(*sys.argv[3:])    
-    
-    
-            
-    def deployment_delete_deprecated(self, *args):
+
+
+    def deployment_force_delete(self, *args):
         """
         Subcommand to delete a deployment directly in database
         FOR DEVELOPMENT PURPOSES ONLY
