@@ -634,7 +634,7 @@ class KuberosCli():
             print(f"Error: {data['errors']}")
             print(f"Message: {data['msgs']}")
 
-    def fleet_disband(self, *args):
+    def fleet_delete(self, *args):
         """
         Subcommand to disband the fleet.
         """
