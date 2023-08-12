@@ -187,7 +187,34 @@ class KuberosCli():
 
         else:
             print(res)
-    
+
+    def list(self, *args):
+        """
+        Command to get the list of deployments
+        """
+        parser = argparse.ArgumentParser(
+            description='List the fleets in kuberos'
+        )
+        # parser.add_argument('--verbose', help='Verbose output')
+        args = parser.parse_args(args)
+        # call api server
+        success, data = self.__api_call('GET',
+                                        f'{self.api_server}/{endpoints.DEPLOYMENT}', 
+                                        auth_token=self.auth_token)
+        if success:
+            data_to_display = [{
+                'name': item['name'],
+                'status': item['status'],
+                'fleet': item['fleet_name'],
+                'running_since': item['running_since'],
+            } for item in data]
+            table = tabulate(data_to_display, headers="keys", tablefmt='plain')
+            print(table)
+        else:
+            print('error')
+            print(data)
+
+
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
         """
@@ -668,31 +695,7 @@ class KuberosCli():
             exit(1)
         getattr(self, f'deployment_{args.subcommand}')(*sys.argv[3:])    
     
-    def deployment_list(self, *args):
-        """
-        Subcommand to get the list of deployments
-        """
-        parser = argparse.ArgumentParser(
-            description='List the fleets in kuberos'
-        )
-        # parser.add_argument('--verbose', help='Verbose output')
-        args = parser.parse_args(args)
-        # call api server 
-        success, data = self.__api_call('GET',
-                                        f'{self.api_server}/{endpoints.DEPLOYMENT}', 
-                                        auth_token=self.auth_token)
-        if success: 
-            data_to_display = [{
-                'name': item['name'],
-                'status': item['status'],
-                'fleet': item['fleet_name'],
-                'running_since': item['running_since'],
-            } for item in data]
-            table = tabulate(data_to_display, headers="keys", tablefmt='plain')
-            print(table)
-        else:
-            print('error')
-
+    
             
     def deployment_delete_deprecated(self, *args):
         """
