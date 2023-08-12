@@ -705,20 +705,23 @@ class KuberosCli():
         )
         parser.add_argument('deployment_name', help='Name of the deployment')
         args = parser.parse_args(args)
-        # call api server 
-        url = '{}/{}/'.format(endpoints.DEPLOYMENT, args.deployment_name)
-        success, res = self.__api_call('DELETE', 
+        # call api server
+        url = f'{endpoints.DEPLOYMENT}/{args.deployment_name}/'
+        success, res = self.__api_call('DELETE',
                                         f'{self.api_server}/{url}',
                                         auth_token=self.auth_token)
         if res['status'] == 'success':
             print("ONLY the DEPLOYMENT in DATABASE is deleted! For TESTING PURPOSES ONLY!")
             print("Deployment include Deployment events deleted successfully")
         else:
-            print('[ERROR] {}'.format(res['msg']))
-    
-    
+            print(f"[ERROR] {res['msg']}")
+
+
     ### REGISTRY TOKEN ###
     def registry_token(self, *args):
+        """
+        Subcommand to add registry token
+        """
         parser = argparse.ArgumentParser(
             description='Manage Registry Token', 
             usage=help_texts.registry_token,
@@ -727,11 +730,14 @@ class KuberosCli():
         args = parser.parse_args(args[:1])
         # call subcommand
         if not hasattr(self, f'registry_token_{args.subcommand}'):
-            print('Unrecognized command: %s' % args.command)
-            exit(1)
-        getattr(self, f'registry_token_{args.subcommand}')(*sys.argv[3:])    
-    
+            print(f'Unrecognized command: {args.subcommand}')
+            sys.exit(1)
+        getattr(self, f'registry_token_{args.subcommand}')(*sys.argv[3:])
+
     def registry_token_list(self, *args):
+        """
+        List all registry tokens
+        """
         parser = argparse.ArgumentParser(
             description="List the registry tokens in kuberos"
         )
@@ -786,10 +792,10 @@ class KuberosCli():
             print(data)
         else:
             print(data)
-        
-        
-    ### GENERAL Management Command ### 
-    def apply(self, *args): 
+
+
+    ### GENERAL Management Command ###
+    def apply(self, *args):
         """
         General purpose command to apply the manifest file, 
         like kubectl apply -f <file>
@@ -799,10 +805,23 @@ class KuberosCli():
         )
         parser.add_argument('-file', required=True, help='Verbose output')
         pass
-    
-    
+
+
     ### PRIVATE METHODS ###
     def __api_call(self, method, url, data=None, files=None, headers=None, auth_token=None):
+        """
+        Private method to call the API server
+        Args:
+            method (_type_): 'CREATE', 'GET', 'PUT', 'DELETE
+            url (_type_): endpoint url
+            data (_type_, optional): data
+            files (_type_, optional): yaml files. Defaults to None.
+            headers (_type_, optional): headers. Defaults to None.
+            auth_token (_type_, optional): user token. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if headers is None:
             headers = {}
             # headers = {'Content-Type': 'application/json'}
