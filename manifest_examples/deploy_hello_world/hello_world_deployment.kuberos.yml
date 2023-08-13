@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ApplicationDeployment
 metadata:
-  name: hello-world-humble-dev-2
+  name: hello-world-humble-dev
   rosVersion: humble
   appVersion: dev-1
   targetFleet: bw1-fleet
@@ -12,7 +12,7 @@ rosModules:
   - name: hello-world-talker
     image: metagoto/ros2-basic-examples:v2-param
     entrypoint: ["ros2 launch examples_rclpy_minimal_publisher publisher.launch.py"]
-    # entrypoint: ["ros2 run examples_rclpy_minimal_publisher publisher_local_function"]
+    source_ws: /workspace/install   # Optional, you can also do it in Dockerfile
 
     preference: [onboard] # Preference for scheduler
     
@@ -55,6 +55,7 @@ rosModules:
   - name: hello-world-listener
     image: metagoto/ros2-basic-examples:v2-param
     entrypoint: ["ros2 run examples_rclpy_minimal_subscriber subscriber_lambda"]
+    source_ws: /workspace/install
 
     preference: [edge, onboard] # Preference for scheduler
     requirements: 
@@ -73,10 +74,14 @@ rosParamMap:
       use_sim: false
       use_rviz: false
       init_topic: 'KuberROS'
+      env_var_1: 'env_var_1'
+      env_var_2: 'env_var_2'
+      STARTX11: true
 
   - name: publisher-param.yaml
     type: yaml
-    path: /workspace/examples/hello_world/config_files/helloword_publisher_params.yml
+    path: /Users/yongzhouzhang/coding_ws/kuberos/kuberos-cli/manifest_examples/deploy_hello_world/configs/publisher_param.yml
+  
   
 
 staticFileMap: 
