@@ -198,10 +198,11 @@ class KuberosCli():
         # parser.add_argument('--verbose', help='Verbose output')
         args = parser.parse_args(args)
         # call api server
-        success, data = self.__api_call('GET',
+        success, response = self.__api_call('GET',
                                         f'{self.api_server}/{endpoints.DEPLOYMENT}', 
                                         auth_token=self.auth_token)
-        if success:
+        if response['status'] == 'success':
+            data = response['data']
             data_to_display = [{
                 'name': item['name'],
                 'status': item['status'],
@@ -211,8 +212,8 @@ class KuberosCli():
             table = tabulate(data_to_display, headers="keys", tablefmt='plain')
             print(table)
         else:
-            print('error')
-            print(data)
+            print('[Error]')
+            print(response)
 
 
     ### CLUSTER MANAGEMENT ###
@@ -683,7 +684,7 @@ class KuberosCli():
     ### DEPLOYMENT ###
     def deployment(self, *args):
         parser = argparse.ArgumentParser(
-            description='Manage Fleets', 
+            description='Manage Deployments',
             usage=help_texts.deployment,
         )
         parser.add_argument('subcommand', help='Subcommand to run')
@@ -692,7 +693,7 @@ class KuberosCli():
         if not hasattr(self, f'deployment_{args.subcommand}'):
             print(f'Unrecognized command: {args.subcommand}')
             sys.exit(1)
-        getattr(self, f'deployment_{args.subcommand}')(*sys.argv[3:])    
+        getattr(self, f'deployment_{args.subcommand}')(*sys.argv[3:])
 
 
     def deployment_force_delete(self, *args):
@@ -706,15 +707,16 @@ class KuberosCli():
         parser.add_argument('deployment_name', help='Name of the deployment')
         args = parser.parse_args(args)
         # call api server
-        url = f'{endpoints.DEPLOYMENT}/{args.deployment_name}/'
+        url = f'api/v1/deployment/admin_only/deployments/{args.deployment_name}/'
         success, res = self.__api_call('DELETE',
                                         f'{self.api_server}/{url}',
                                         auth_token=self.auth_token)
         if res['status'] == 'success':
             print("ONLY the DEPLOYMENT in DATABASE is deleted! For TESTING PURPOSES ONLY!")
-            print("Deployment include Deployment events deleted successfully")
+            print("Deployment including deployment events and jobs deleted successfully")
         else:
-            print(f"[ERROR] {res['msg']}")
+            print("[ERROR]")
+            print(res)
 
 
     ### REGISTRY TOKEN ###
@@ -902,7 +904,7 @@ class KuberosCli():
         config['token'] = data['token']
         config['api_server_address'] = api_server_address
         
-        # save to file 
+        # save to file
         with open(".kuberos.config", "w") as f:
             yaml.safe_dump(config, f, default_flow_style=False)
         print('Login success')
