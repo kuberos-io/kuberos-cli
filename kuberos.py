@@ -78,8 +78,7 @@ class KuberosCli():
         or select software module from software manager.
         args: 
             - file: deployment description file
-        ./kuberos.py deploy -f /workspace/kuberoscli/ros_deployment/hello_world_single_robot.kuberos.yml
- 
+
         # TODO: Read the deployment ros parameter yaml file and send the request to API server
         """
         parser = argparse.ArgumentParser(
@@ -88,22 +87,71 @@ class KuberosCli():
         parser.add_argument('-f', required=True, help='YAML file')
         args = parser.parse_args(args)
 
-        # load yaml file
         try:
-            with open(args.f, "r") as f:
-                files = {'deployment_yaml': f}
+            with open(args.f, "r") as yaml_file:
+
+                deploy_content = yaml.safe_load(yaml_file)
+                rosparam_yamls = self.load_yaml_files_from_parammap(deploy_content)
+
                 # call api server
                 _, response = self.__api_call(
                     'POST',
                     f'{self.api_server}/{endpoints.DEPLOYING}',
-                    files=files,
+                    json_data={
+                        'deployment_manifest': deploy_content,
+                        'rosparam_yamls': rosparam_yamls
+                    },
                     auth_token=self.auth_token
                 )
                 print (response)
-                
+
         except FileNotFoundError:
             print(f'Deployment description file: {args.f} not found.')
             sys.exit(1)
+
+    @staticmethod
+    def load_yaml_files_from_parammap(deploy_content: dict):
+        """
+        Load the yaml files from the rosParamMap
+
+        Args:
+            deploy_content (dict): Deployment manifest
+        Returns:
+            list of dict: 
+                {
+                    'name': paramete map name,
+                    'type': 'yaml',
+                    'content': {
+                        'ros parameter file name': 'file content'
+                    }
+                }
+        """
+        parammap = deploy_content.get('rosParamMap', None)
+        if not parammap:
+            return []
+
+        param_files = []
+        for item in parammap:
+            if item['type'] == 'yaml':
+                try:
+                    with open(item['path'], 'r') as yaml_file:
+                        # read the file content, don't parse it to dict
+                        param_files.append({
+                            'name': item['name'],
+                            'type': 'yaml',
+                            'content': {
+                                item['name']: yaml_file.read()
+                            },
+                        })
+                except FileNotFoundError:
+                    print(f"Parameter file: {item['path']} not found.")
+                    sys.exit(1)
+                except KeyError:
+                    print(f"Parameter file path in {item['name']} is not specified.")
+                    sys.exit(1)
+
+        return param_files
+
 
     def delete(self, *args):
         """
@@ -292,7 +340,10 @@ class KuberosCli():
                 json_str = json.dumps(response['data'], indent=4)
                 print(json_str)
             elif args.output == 'yaml':
-                data_to_display = yaml.dump(response['data'], default_flow_style=False, indent=2, sort_keys=False)
+                data_to_display = yaml.dump(response['data'], 
+                                            default_flow_style=False, 
+                                            indent=2, 
+                                            sort_keys=False)
                 print(data_to_display)
             else:
                 data = response['data']
@@ -666,7 +717,7 @@ class KuberosCli():
         Subcommand to disband the fleet.
         """
         parser = argparse.ArgumentParser(
-            description='Get the details of a fleet'
+            description='Delete a fleet by name'
         )
         parser.add_argument('fleet_name', help='Name of the fleet')
         args = parser.parse_args(args)
@@ -810,7 +861,8 @@ class KuberosCli():
 
 
     ### PRIVATE METHODS ###
-    def __api_call(self, method, url, data=None, files=None, headers=None, auth_token=None):
+    def __api_call(self, method, url, data=None, json_data=None,
+                   files=None, headers=None, auth_token=None):
         """
         Private method to call the API server
         Args:
@@ -822,7 +874,8 @@ class KuberosCli():
             auth_token (_type_, optional): user token. Defaults to None.
 
         Returns:
-            _type_: _description_
+            success (bool): True if success, False if failed and print error message
+            data (dict): response data
         """
         if headers is None:
             headers = {}
@@ -830,17 +883,18 @@ class KuberosCli():
         if auth_token is not None:
             headers['Authorization'] = 'Token ' + auth_token
         try:
-            resp = requests.request(method, url, data=data, files=files, headers=headers)
+            resp = requests.request(method, url, data=data, json=json_data, files=files, headers=headers)
             resp.raise_for_status()
             data = resp.json()
             return True, data
+
         except requests.exceptions.HTTPError:
             err_type = resp.status_code
 
             if err_type == 400:
                 # Bad request
                 print("[Bad Request '400'] Please check the request parameters.")
-            
+
             if err_type == 401:
                 # Unauthorized
                 print("[Unauthorized '401'] Login is required. The cached token is expired.")
