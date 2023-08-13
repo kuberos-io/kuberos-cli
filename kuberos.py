@@ -354,20 +354,20 @@ class KuberosCli():
                 print(f'Since Last Sync: {data["last_sync_since"]}')
                 print('\n')
                 # print(data)
-                # display onboard device 
+                # display onboard device
                 onboard_devices = []
                 edge_nodes = []
                 cloud_nodes = []
                 control_plane_nodes = []
                 unassigned_nodes = []
-                
+
                 for node in data['cluster_node_set']:
                     # onboard computers
                     if node['kuberos_role'] == 'onboard':
                         fleet_name = node.get('assigned_fleet_name', 'Unknown')
                         if not fleet_name:
                             fleet_name = 'N/A'
-                            
+
                         onboard_devices.append(
                             {
                                 'ROBOT_NAME': node.get('robot_name', None),
@@ -376,7 +376,7 @@ class KuberosCli():
                                 'AVAILABLE': node['is_available'],
                                 'FLEET': fleet_name,
                                 'PERIPHERALS': node.get('peripheral_device_name_list', None),})
-                    
+
                     # Edge nodes (on-premise)        
                     elif node['kuberos_role'] == 'edge':
                         edge_nodes.append({
@@ -437,7 +437,6 @@ class KuberosCli():
         """
         Update the inventory description
          - set node labels
-        ./kuberos.py cluster update -f /workspace/kuberoscli/inventory/bw1.inventory.kuberos.yml
         """
         parser = argparse.ArgumentParser(
             description='Init K8s Cluster with Inventory Description'
@@ -452,7 +451,7 @@ class KuberosCli():
                 data = {
                     'updata': True # add more options todo later
                 }
-                # call API server 
+                # call API server
                 _, res = self.__api_call(
                     'POST',
                     f'{self.api_server}/{endpoints.CLUSTER_INVENTORY}',
@@ -465,15 +464,13 @@ class KuberosCli():
                 else:
                     print(res)
         except FileNotFoundError:
-            print("Inventory description file: {} not found.".format(args.inv))
-            exit(1)
-    
-    
+            print(f'Inventory description file: {args.f} not found.')
+            sys.exit(1)
+
+
     def cluster_create(self, *args):
         """
         Add new cluster to be managed by KubeROS
-        Test command: 
-        python kuberos.py cluster create bw1-prod-cluster --host https://193.196.37.240:6443 --ca_cert /workspace/kuberos/pykuberos/config/ca_bw1.crt --token eyJhbGciOiJSUzI1NiIsImtpZCI6ImNwUVQ2ZmpzRDNJUVR4MFE1aEtvTzdCdUJDVnhxcGMtSW8zNmpId1BfQW8ifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6Imt1YmVyb3Mtc2VydmljZS1hY2NvdW50LXRva2VuLWh2am5oIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6Imt1YmVyb3Mtc2VydmljZS1hY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiODU5NTJiOTQtYWZjYi00YTJmLWE2ZjYtMWEwMWExMzUwYzVkIiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmRlZmF1bHQ6a3ViZXJvcy1zZXJ2aWNlLWFjY291bnQifQ.bkfWZOqN__DspAXQw5yzX0TTYbGrfhbYOJZKM7AMWKD2tsJduHkuK49tdpSId2_RZYOIAgHfvVF9Q7U9LMEtC5aTMP1ruQiGYqUa0S-emOqDkw_3K1aOmU4L4m6zXqZrCX_sTMJKJtiup6mfWT6dFqPe96o1_kWomiOF2zWzuaYVTRlukpnrXB2FPPC9uz3_ojyUPmur4GAr1xbTgA6UYAOAtPIf_VfM-Wq_OU4ntfncXVbqa5kktkSwr-vkRZktH0juEuz601F8b-2EyckXcynFF1mY3NNURb1LAreiMSltsqaSkJWNlr8ybCAaVZV9LslpNcjbeRmNOmjwRZq0Hg
         """
         parser = argparse.ArgumentParser(
             description='Add a new cluster to Kuberos Plattform'
@@ -487,7 +484,7 @@ class KuberosCli():
         if args.f: 
             cluster = self.parse_cluster_registration_yaml(args.f)
             ca_file_path = cluster.pop('ca_cert')
-        else: 
+        else:
             cluster = {
                     'cluster_name': args.cluster_name,
                     'distribution': 'k3s',
@@ -515,11 +512,18 @@ class KuberosCli():
         except FileNotFoundError:
             print(f'CA file: {args.ca_cert} not found.')
             sys.exit(1)
-    
+
     @staticmethod
     def parse_cluster_registration_yaml(yaml_file):
+        """
+        Parse the cluster registration yaml file
+        Args:
+            yaml_file (str): path_to_yaml_file
+        Returns:
+            dict: cluster registreation dict
+        """
         try:
-            with open(yaml_file, 'r') as f: 
+            with open(yaml_file, 'r') as f:
                 manifest = yaml.safe_load(f)
                 meta_data = manifest['metadata']
                 cluster = {
@@ -533,7 +537,7 @@ class KuberosCli():
         except FileNotFoundError:
             print(f'Cluster registration file: {yaml_file} not found.')
             sys.exit(1)
-        
+
 
     def cluster_reset(self, *args):
         """
@@ -549,9 +553,9 @@ class KuberosCli():
         )
         parser.add_argument('cluster_name', help='Name of the cluster')
         args = parser.parse_args(args)
-        # call api server 
-        url = f'{endpoints.CLUSTER}{args.cluster_name}/'  
-        success, data = self.__api_call('DELETE', 
+        # call api server
+        url = f'{endpoints.CLUSTER}{args.cluster_name}/'
+        success, data = self.__api_call('DELETE',
                                         f'{self.api_server}/{url}',
                                         auth_token=self.auth_token)
         if success:
@@ -585,17 +589,20 @@ class KuberosCli():
     ###            FLEET MANAGEMENT              ###
     ################################################
     def fleet(self, *args):
+        """
+            Fleet management command
+        """
         parser = argparse.ArgumentParser(
-            description='Manage Fleets', 
+            description='Manage Fleets',
             usage=help_texts.fleet,
         )
         parser.add_argument('subcommand', help='Subcommand to run')
         args = parser.parse_args(args[:1])
         # call subcommand
         if not hasattr(self, f'fleet_{args.subcommand}'):
-            print('Unrecognized command: %s' % args.subcommand)
-            exit(1)
-        getattr(self, f'fleet_{args.subcommand}')(*sys.argv[3:])    
+            print(f'Unrecognized command: {args.subcommand}')
+            sys.exit(1)
+        getattr(self, f'fleet_{args.subcommand}')(*sys.argv[3:])
 
 
     def fleet_create(self, *args):
@@ -608,7 +615,7 @@ class KuberosCli():
         parser.add_argument('-f', help='File path of fleet manifest')
         args = parser.parse_args(args)
 
-        try: 
+        try:
             with open(args.f, 'r') as f:
                 files = {'fleet_manifest': f}
                 data = {
@@ -639,7 +646,7 @@ class KuberosCli():
         parser.add_argument('--verbose', help='Verbose output')
         args = parser.parse_args(args)
         # call api server
-        success, response = self.__api_call('GET', 
+        success, response = self.__api_call('GET',
                                         f'{self.api_server}/{endpoints.FLEET}', 
                                         auth_token=self.auth_token)
         if success:
@@ -734,6 +741,9 @@ class KuberosCli():
 
     ### DEPLOYMENT ###
     def deployment(self, *args):
+        """
+            Deployment management command
+        """
         parser = argparse.ArgumentParser(
             description='Manage Deployments',
             usage=help_texts.deployment,
@@ -776,7 +786,7 @@ class KuberosCli():
         Subcommand to add registry token
         """
         parser = argparse.ArgumentParser(
-            description='Manage Registry Token', 
+            description='Manage Registry Token',
             usage=help_texts.registry_token,
         )
         parser.add_argument('subcommand', help='Subcommand to run')
@@ -823,7 +833,7 @@ class KuberosCli():
             # test command: 
             python kuberos.py registry_token attach --cluster bw1-prod-cluster --token kuberos-test-registry-token
         """
-        
+
         parser = argparse.ArgumentParser(
             description="List the registry tokens in kuberos"
         )
@@ -1003,7 +1013,7 @@ class KuberosCli():
                                             })
         print(f'Success: {success}')
         print(response)
-        
+
 
     def load_config(self):
         """
@@ -1013,15 +1023,15 @@ class KuberosCli():
         config_path = os.environ.get('KUBEROS_CONFIG', None)
         if config_path is None:
             config_path = '.kuberos.config'
-        
+
         # load the config file
         try:
             with open(config_path, "r") as f:
                 config = yaml.safe_load(f)
         except FileNotFoundError:
             print(f'Config file not found in path: {config_path}')
-        
-    # set parameters
+
+        # set parameters
         self.api_server = config['api_server_address']
         self.auth_token = config['token']
 
