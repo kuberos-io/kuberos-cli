@@ -166,9 +166,9 @@ class KuberosCli():
         args = parser.parse_args(args)
 
         url = f'{endpoints.DEPLOYING}{args.deployment_name}/'
-        success, response = self.__api_call('DELETE',
-                                       f'{self.api_server}/{url}', 
-                                       auth_token=self.auth_token)
+        _, response = self.__api_call('DELETE',
+                                      f'{self.api_server}/{url}',
+                                      auth_token=self.auth_token)
         print(response)
 
 
@@ -183,9 +183,9 @@ class KuberosCli():
         args = parser.parse_args(args)
         # call api server
         url = f'{endpoints.DEPLOYMENT}{args.deployment_name}/'
-        success, res = self.__api_call('GET',
-                                        f'{self.api_server}/{url}',
-                                        auth_token=self.auth_token)
+        _, res = self.__api_call('GET',
+                                 f'{self.api_server}/{url}',
+                                 auth_token=self.auth_token)
         if res['status'] == 'success':
             data = res['data']
 
@@ -246,9 +246,9 @@ class KuberosCli():
         # parser.add_argument('--verbose', help='Verbose output')
         args = parser.parse_args(args)
         # call api server
-        success, response = self.__api_call('GET',
-                                        f'{self.api_server}/{endpoints.DEPLOYMENT}', 
-                                        auth_token=self.auth_token)
+        _, response = self.__api_call('GET',
+                                      f'{self.api_server}/{endpoints.DEPLOYMENT}',
+                                      auth_token=self.auth_token)
         if response['status'] == 'success':
             data = response['data']
             data_to_display = [{
@@ -280,7 +280,7 @@ class KuberosCli():
             print(f'[Error] -- Unrecognized command: {args.subcommand}')
             sys.exit(1)
         getattr(self, f'cluster_{args.subcommand}')(*sys.argv[3:])
-    
+
     def cluster_list(self, *args):
         """
         List all clusters that the user has access to
@@ -291,7 +291,7 @@ class KuberosCli():
         parser.add_argument('--verbose', help='Verbose output')
         args = parser.parse_args(args)
         # call api server
-        success, response = self.__api_call('GET', f'{self.api_server}/{endpoints.CLUSTER}', 
+        success, response = self.__api_call('GET', f'{self.api_server}/{endpoints.CLUSTER}',
                                         auth_token=self.auth_token)
         if success:
             data = response['data']
@@ -326,7 +326,7 @@ class KuberosCli():
         url = f'{endpoints.CLUSTER}{args.cluster_name}/'
         success, response = self.__api_call('GET',
                                         f'{self.api_server}/{url}',
-                                        auth_token=self.auth_token, 
+                                        auth_token=self.auth_token,
                                         data={
                                             'sync': args.sync
                                         })
@@ -340,9 +340,9 @@ class KuberosCli():
                 json_str = json.dumps(response['data'], indent=4)
                 print(json_str)
             elif args.output == 'yaml':
-                data_to_display = yaml.dump(response['data'], 
-                                            default_flow_style=False, 
-                                            indent=2, 
+                data_to_display = yaml.dump(response['data'],
+                                            default_flow_style=False,
+                                            indent=2,
                                             sort_keys=False)
                 print(data_to_display)
             else:
@@ -357,7 +357,6 @@ class KuberosCli():
                 # display onboard device
                 onboard_devices = []
                 edge_nodes = []
-                cloud_nodes = []
                 control_plane_nodes = []
                 unassigned_nodes = []
 
@@ -377,7 +376,7 @@ class KuberosCli():
                                 'FLEET': fleet_name,
                                 'PERIPHERALS': node.get('peripheral_device_name_list', None),})
 
-                    # Edge nodes (on-premise)        
+                    # Edge nodes (on-premise)
                     elif node['kuberos_role'] == 'edge':
                         edge_nodes.append({
                                 'HOSTNAME': node['hostname'],
@@ -385,8 +384,8 @@ class KuberosCli():
                                 'SHARED RESOURCE': node.get('is_shared', None),
                                 'AVAILABLE': node['is_available'],
                                 'REACHABLE': node['is_alive']})
-    
-                    # unassigned nodes  
+
+                    # unassigned nodes
                     elif node['kuberos_role'] == 'unassigned':
                         unassigned_nodes.append({
                                 'HOSTNAME': node['hostname'],
@@ -394,8 +393,8 @@ class KuberosCli():
                                 'REGISTERED': node['kuberos_registered'],
                                 'AVAILABLE': node['is_available'],
                                 'REACHABLE': node['is_alive'],})
-                    
-                    # control plane nodes  
+
+                    # control plane nodes
                     elif node['kuberos_role'] == 'control_plane':
                         control_plane_nodes.append({
                                 'HOSTNAME': node['hostname'],
@@ -403,8 +402,8 @@ class KuberosCli():
                                 'REGISTERED': node['kuberos_registered'],
                                 'AVAILABLE': node['is_available'],
                                 'REACHABLE': node['is_alive'],})
-                
-                # display data 
+
+                # display data
                 num_of_single_dash = 80
                 if len(onboard_devices) > 0:
                     print('Robot Onboard Computers')
@@ -481,7 +480,7 @@ class KuberosCli():
         parser.add_argument('--ca_cert', help='Path of CA certificate')
         parser.add_argument('-f', help='File path of cluster registration')
         args = parser.parse_args(args)
-        if args.f: 
+        if args.f:
             cluster = self.parse_cluster_registration_yaml(args.f)
             ca_file_path = cluster.pop('ca_cert')
         else:
@@ -1037,7 +1036,7 @@ class KuberosCli():
 
     def config(self):
         # change the configuration of kube api server
-        # default, using 
+        # default, using
         # TODO
         pass
 
@@ -1046,7 +1045,7 @@ class KuberosCli():
     @print_helper(help_text=help_texts.info)
     def info(self, *args):
         parser = argparse.ArgumentParser(
-            description='Display the Kuberos main api server information', 
+            description='Display the Kuberos main api server information',
             usage=help_texts.info
         )
 
