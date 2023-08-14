@@ -797,6 +797,40 @@ class KuberosCli():
             sys.exit(1)
         getattr(self, f'registry_token_{args.subcommand}')(*sys.argv[3:])
 
+    def registery_token_create(self, *args):
+        """
+        Create a registry token
+        """
+        parser = argparse.ArgumentParser(
+            description='Create a registry token'
+        )
+        parser.add_argument('-f', help='File path of fleet manifest')
+        args = parser.parse_args(args)
+
+        try:
+            with open(args.f, 'r') as yaml_file:
+                registry_token = yaml.safe_load(yaml_file)
+                data = {
+                    'name': registry_token['name'],
+                    'user_name': registry_token['userName'],
+                    'registry_url': registry_token['registryUrl'],
+                    'token': registry_token['token'],
+                    'description': registry_token['description'],
+                }
+                # call API server
+                _, res = self.__api_call(
+                    'POST',
+                    f'{self.api_server}/{endpoints.REGISTRY_TOKEN}',
+                    data=data,
+                    auth_token=self.auth_token
+                )
+                print(res)
+
+        except FileNotFoundError:
+            print(f'Container registry token file: {args.f} not found.')
+            sys.exit(1)
+
+
     def registry_token_list(self, *args):
         """
         List all registry tokens
@@ -807,9 +841,9 @@ class KuberosCli():
         args = parser.parse_args(args)
         success, data = self.__api_call(
             'GET',
-            f'{self.api_server}/{endpoints.REGISTRY_TOKEN_LIST}', 
+            f'{self.api_server}/{endpoints.REGISTRY_TOKEN}', 
             auth_token=self.auth_token)
-        if success: 
+        if success:
             data_to_display = [{
                 'name': item['name'],
                 'uuid': item['uuid'],
@@ -893,7 +927,10 @@ class KuberosCli():
         if auth_token is not None:
             headers['Authorization'] = 'Token ' + auth_token
         try:
-            resp = requests.request(method, url, data=data, json=json_data, files=files, headers=headers)
+            resp = requests.request(method, url, data=data,
+                                    json=json_data,
+                                    files=files,
+                                    headers=headers)
             resp.raise_for_status()
             data = resp.json()
             return True, data
