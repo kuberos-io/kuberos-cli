@@ -1,0 +1,11 @@
+# Only for development purposes
+# Don't use in production for security reasons
+
+apiVersion: v1alpha
+kind: RegistryToken
+metadata:
+  name: <token name in the cluster>
+  userName: 'kuberos'
+  registryUrl: <registry url>
+  token: <token>
+  description: 'Test token'
