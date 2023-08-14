@@ -11,6 +11,8 @@ metadata:
 rosModules:
   - name: hello-world-talker
     image: metagoto/ros2-basic-examples:v2-param
+    containerRegistry: default # Optional, if not specified, use the default registry
+    
     entrypoint: ["ros2 launch examples_rclpy_minimal_publisher publisher.launch.py"]
     sourceWs: /workspace/install   # Optional, you can also do it in Dockerfile
 
@@ -54,6 +56,7 @@ rosModules:
 
   - name: hello-world-listener
     image: metagoto/ros2-basic-examples:v2-param
+
     entrypoint: ["ros2 run examples_rclpy_minimal_subscriber subscriber_lambda"]
     sourceWs: /workspace/install
 
@@ -98,3 +101,11 @@ staticFileMap:
   - name: claimed_pv
     # decoupled storage, for using in the edge and cloud. 
     # feature with low priority. 
+
+
+# Provide the registry credential to pull the image
+containerRegistry:
+  - name: default
+    imagePullSecret: 'kuberos-fogrobo-registry-token-test'
+    imagePullPolicy: 'Always'
+
