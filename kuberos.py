@@ -8,7 +8,7 @@ import requests
 import getpass
 import json
 import yaml
-import sys 
+import sys
 from tabulate import tabulate
 
 # KuberosCLI
@@ -35,14 +35,14 @@ class KuberosCli():
     """
     def __init__(self) -> None:
         self.parser = argparse.ArgumentParser(
-            description='ROS Kubernetes Package Manager', 
+            description='ROS Kubernetes Package Manager',
             usage=help_texts.help_text_summary
         )
         self.parser.add_argument('command',
                             # choices=["list", "create", "delete"],
                             help='Subcommand to run')
 
-        # config parameters 
+        # config parameters
         self.parser.add_argument('--output', help='Output format (default is table. "yaml"/"dict")')
         self.parser.add_argument('--kube-config-file', help='Path to k8s config file')
         self.parser.add_argument('--kube-api-server', help='K8s Api server IP and Port')
@@ -187,6 +187,7 @@ class KuberosCli():
                                  f'{self.api_server}/{url}',
                                  auth_token=self.auth_token)
         if res['status'] == 'success':
+            
             data = res['data']
 
             # meta info
@@ -222,12 +223,12 @@ class KuberosCli():
                 data_to_display = [{
                         'Resource Name': pod['name'],
                         'Type': 'Pod',
-                        'Status': pod['status'],
+                        'Status': pod.get('status', 'N/A'),
                     } for pod in job['all_pods_status']]
                 data_to_display += [{
                         'Resource Name': svc['name'],
                         'Type': 'Service',
-                        'Status': svc['status'],
+                        'Status': svc.get('status', 'N/A'),
                 } for svc in job['all_svcs_status']]
 
                 table = tabulate(data_to_display, headers="keys", tablefmt='plain')
