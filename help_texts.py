@@ -44,8 +44,8 @@ Management Commands:
     registry_token
         list     Get token list
         create   Add a new token to the registry (Once token is created, it cannot be read anymore)
-        update   Update a token (If you forget, you can replace it with a new one)
-        delete   Delete a token
+        update   Update a token (If you forget, you can replace it with a new one) -> Deprecated
+        delete   Delete a token -> TODO
         attach   Attach a token to a new cluster (A service account with appropriate role is required.)
         remove
         

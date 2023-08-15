@@ -21,8 +21,9 @@ DEPLOYMENT = 'api/v1/deployment/deployments/'
 
 
 # Registry token
+REGISTRY_TOKEN = 'api/v1/cluster/container_registry_access_tokens/'
+REGISTER_TOKEN_TO_CLUSTER = 'api/v1/cluster_operating/container_registry_access_token/'
+
 REGISTRY_TOKEN_LIST = 'api/v1/cluster/container_registry_access_tokens/'
 REGISTRY_TOKEN_GET_UPDATE_DELETE = 'api/v1/cluster/container_registry_access_tokens/<uuid>/'
 REGISTRY_TOKEN_ATTACH_REMOVE = 'api/v1/cluster_operating/container_registry_access_token/'
-
-
