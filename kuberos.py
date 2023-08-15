@@ -797,7 +797,7 @@ class KuberosCli():
             sys.exit(1)
         getattr(self, f'registry_token_{args.subcommand}')(*sys.argv[3:])
 
-    def registery_token_create(self, *args):
+    def registry_token_create(self, *args):
         """
         Create a registry token
         """
@@ -810,12 +810,13 @@ class KuberosCli():
         try:
             with open(args.f, 'r') as yaml_file:
                 registry_token = yaml.safe_load(yaml_file)
+                meta_data = registry_token['metadata']
                 data = {
-                    'name': registry_token['name'],
-                    'user_name': registry_token['userName'],
-                    'registry_url': registry_token['registryUrl'],
-                    'token': registry_token['token'],
-                    'description': registry_token['description'],
+                    'name': meta_data['name'],
+                    'user_name': meta_data['userName'],
+                    'registry_url': meta_data['registryUrl'],
+                    'token': meta_data['token'],
+                    'description': meta_data['description'],
                 }
                 # call API server
                 _, res = self.__api_call(
@@ -839,11 +840,12 @@ class KuberosCli():
             description="List the registry tokens in kuberos"
         )
         args = parser.parse_args(args)
-        success, data = self.__api_call(
+        success, response = self.__api_call(
             'GET',
             f'{self.api_server}/{endpoints.REGISTRY_TOKEN}', 
             auth_token=self.auth_token)
         if success:
+            data = response['data']
             data_to_display = [{
                 'name': item['name'],
                 'uuid': item['uuid'],
@@ -855,6 +857,8 @@ class KuberosCli():
             print(table)
         else:
             print('error')
+            print(response)
+
 
     def registry_token_attach(self, *args):
         """
@@ -877,7 +881,7 @@ class KuberosCli():
         args = parser.parse_args(args)
         sucess, data = self.__api_call(
             'POST', 
-            f'{self.api_server}/{endpoints.REGISTRY_TOKEN_ATTACH_REMOVE}',
+            f'{self.api_server}/{endpoints.REGISTER_TOKEN_TO_CLUSTER}',
             data={
                 'cluster_name': args.cluster,
                 'token_name': args.token,
