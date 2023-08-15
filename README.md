@@ -2,6 +2,12 @@
 
 This repo contains the cli tools for users to interact with KubeROS platform. 
 
+## Setup
+
+```
+pip install -r requirements.txt
+```
+
 ## Usage
 This tool follows the style of ROS2 CLI. Run `kuberos.py` or `kuberos --help` to get all available commands.
 ```
