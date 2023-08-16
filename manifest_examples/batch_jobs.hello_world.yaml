@@ -92,16 +92,7 @@ rosModules:
     entrypoint: ["ros2 run examples_rclpy_minimal_subscriber subscriber_lambda"]
     sourceWs: /workspace/install
 
-    preference: [edge, onboard] # Preference for scheduler
-
-    lifecycle_topic: /lifecycle_state  # string: running, success, failed 
-    requirements: 
-      latency: 50ms
-      dynamicRescheduling: false
-      privilege: true
-      nvidia: false # placeholder for the future
-      containerRuntime: containerd/docker # placeholder for the future
-      useBridge: false # after parser, the target cluster should be injected.
+    lifecycleTopic: /lifecycle_state  # string: running, success, failed 
 
 
 rosParamMap:
