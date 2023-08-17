@@ -172,7 +172,7 @@ class KuberosCli():
         print(response)
 
 
-    def status(self, *args):
+    def info(self, *args):
         """
         Command to get the details of a deployment
         """
@@ -311,7 +311,7 @@ class KuberosCli():
         else:
             print('error')
 
-    def cluster_status(self, *args):
+    def cluster_info(self, *args):
         """
         Retrieve the status of a cluster by cluster name
         """
@@ -664,7 +664,7 @@ class KuberosCli():
         else:
             print('error')
 
-    def fleet_status(self, *args):
+    def fleet_info(self, *args):
         """
         Subcommand to get the details of a fleet
         ./kuberos.py fleet status bw0-fleet
@@ -1076,7 +1076,7 @@ class KuberosCli():
         self.api_server = config['api_server_address']
         self.auth_token = config['token']
 
-    def config(self):
+    def config(self, *args):
         # change the configuration of kube api server
         # default, using
         # TODO
