@@ -13,6 +13,8 @@ To deploy, delete, update and monitor deployments, KubeROS provides the followin
 ```bash
 # Create a deployment 
 ./kuberos.py deploy -f <path-to-deployment-manifest>
+# List all deployments
+./kuberos.py list
 # Get the deployment status 
 ./kuberos.py info <deployment name> 
 # Delete a deployment
