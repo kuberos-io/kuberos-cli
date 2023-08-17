@@ -9,7 +9,7 @@ Basic Commands:
 
     deploy       Deploy an ROS2 application
     list         List all deployments
-    status       Display the status of the deployment request
+    info         Display the status of the deployment request
     delete       Delete deployed application via file or deployment name
     upgrade      Upgrade an existing deployment -> TODO
     check        Check the deployment request -> TODO
@@ -19,24 +19,20 @@ Management Commands:
     apply        Update the inventory, fleet description
     
     fleet   
-        list     Get the list of fleets   GET 
-        status   Get a fleet by name      GET 
-        create   Build a new fleet (Fleet name must be unique)    POST
+        list     Get the list of fleets
+        info     Get a fleet by name
+        create   Build a new fleet (Fleet name must be unique)
                  -f --fleet_manifest: fleet manifest file
-        update   Update a fleet with fleet description   PATCH 
-        delete   Remove a fleet from Kuberos (remove all kuberos labels)    DELETE
+        update   Update a fleet with fleet description
+        delete   Remove a fleet from Kuberos (remove all kuberos labels)
                  
     cluster      Manage clusters
-        create   Register a new cluster to Kuberos  -- first step!   CREATE
-        list     List all clusters   ***  GET
+        create   Register a new cluster to Kuberos 
+                    -f: cluster registration yaml file
+        list     List all clusters
         update   Update a cluster inventory description
-                 -f: inventory description file
-        status   Get a cluster by the cluster name   *** GET 
-                 args: -free-nodes-only   
-                       -sync force sync with kubernetes
+                    -f: cluster inventory file
         delete   Remove a cluster from Kuberos
-        
-        reset    Reset the cluster (remove all kuberos labels) -> Deprecated
         
     deployment 
         force_delete   Delete a deployment by the name (BE CAREFUL!!! ONLY FOR DEV PURPOSES)
@@ -47,13 +43,12 @@ Management Commands:
         update   Update a token (If you forget, you can replace it with a new one) -> Deprecated
         delete   Delete a token -> TODO
         attach   Attach a token to a new cluster (A service account with appropriate role is required.)
-        remove
         
     repository   
         read     Add a new repository to the registry
         get      
-        update   
-        delete  
+        update
+        delete
     
     repo 
         list rosmodules 
@@ -101,28 +96,27 @@ Usage:
 # CLUSTER
 cluster = '''Clusters Management Command
 subcommand:
-    register Register a new cluster to Kuberos  -- first step!   CREATE
+    create   Register a new cluster to Kuberos 
+                -f: cluster registration yaml file
     list     List all clusters   ***  GET
     update   Update a cluster inventory description
-                -f: inventory description file
-    status   Get a cluster by the cluster name   *** GET 
-                args: -free-nodes-only   
-                    -sync force sync with kubernetes
-    
-    reset    Reset the cluster (remove all kuberos labels)
-    remove   Remove a cluster from Kuberos
+                -f: cluster inventory file
+    info     Get a cluster by the cluster name   *** GET 
+                -sync force sync with kubernetes
+    delete   Remove a cluster from Kuberos
+
 '''
 
 
 ### FLEET
 fleet = '''Fleet Management Command
 subcommand:
-    list     Get the list of fleets   GET 
-    status   Get a fleet by name      GET 
+    list     Get the list of fleets
+    info     Get a fleet by name
     create   Build a new fleet (Fleet name must be unique)    POST
                 -f --fleet_manifest: fleet manifest file
     update   Update a fleet with fleet description   PATCH 
-    disband  Remove a fleet from Kuberos (remove all kuberos labels)    DELETE
+    delete   Remove a fleet from Kuberos (remove all kuberos labels)    DELETE
 '''
 
 
