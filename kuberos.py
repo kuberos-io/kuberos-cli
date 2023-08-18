@@ -250,6 +250,7 @@ class KuberosCli():
         _, response = self.__api_call('GET',
                                       f'{self.api_server}/{endpoints.DEPLOYMENT}',
                                       auth_token=self.auth_token)
+        
         if response['status'] == 'success':
             data = response['data']
             data_to_display = [{
@@ -1084,12 +1085,12 @@ class KuberosCli():
 
 
     ### INFO ###
-    @print_helper(help_text=help_texts.info)
-    def info(self, *args):
-        parser = argparse.ArgumentParser(
-            description='Display the Kuberos main api server information',
-            usage=help_texts.info
-        )
+    # @print_helper(help_text=help_texts.info)
+    # def info(self, *args):
+    #     parser = argparse.ArgumentParser(
+    #         description='Display the Kuberos main api server information',
+    #         usage=help_texts.info
+    #     )
 
     def print_helper(self):
         print(help_texts.help_text_summary)
