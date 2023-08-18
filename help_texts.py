@@ -2,7 +2,7 @@
 # Summary
 help_text_summary = '''KubeROS Command Line Interface
 
-Usage: 
+Usage:
     kuberos <command> [<subcommand>] [<args]
 
 Basic Commands:
@@ -126,6 +126,15 @@ subcommand:
     list     List all deployments
     status   Get a deployment by name
     delete   Delete a deployment by the name (BE CAREFUL!!! ONLY FOR DEV PURPOSES)
+'''
+
+### BATCH JOB
+BATCH_JOB = '''
+Batch Job Management Command
+subcommand:
+    list     List all batchjob 
+    status   Get a batchjob by name
+    delete   Delete a batchjob by the name
 '''
 
 ### REGISTRY TOKENS  

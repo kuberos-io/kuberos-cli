@@ -78,8 +78,6 @@ class KuberosCli():
         or select software module from software manager.
         args: 
             - file: deployment description file
-
-        # TODO: Read the deployment ros parameter yaml file and send the request to API server
         """
         parser = argparse.ArgumentParser(
             description='Deploy an application'
@@ -187,7 +185,7 @@ class KuberosCli():
                                  f'{self.api_server}/{url}',
                                  auth_token=self.auth_token)
         if res['status'] == 'success':
-            
+
             data = res['data']
 
             # meta info
@@ -266,6 +264,87 @@ class KuberosCli():
             print(response)
 
 
+    ### BATCH JOBS ###
+    def job(self, *args):
+        """
+        Batch jobs command
+        """
+        parser = argparse.ArgumentParser(
+            description='Submit batch jobs',
+            usage=help_texts.BATCH_JOB,
+        )
+        parser.add_argument('subcommand', help='Subcommand to run')
+        args = parser.parse_args(args[:1])
+        # call subcommand
+        if not hasattr(self, f'job_{args.subcommand}'):
+            print(f'[Error] -- Unrecognized command: {args.subcommand}')
+            sys.exit(1)
+        getattr(self, f'job_{args.subcommand}')(*sys.argv[3:])
+
+
+    def job_list(self, *args):
+        """
+        List all batchjob deployment
+        """
+        parser = argparse.ArgumentParser(
+            description='List the registered clusters in kuberos'
+        )
+        args = parser.parse_args(args)
+        # call api server
+        success, response = self.__api_call('GET', f'{self.api_server}/{endpoints.BATCH_JOB}',
+                                        auth_token=self.auth_token)
+
+        if success:
+            data = response['data']
+            data_to_display = [{
+                'Batch jobs name': item['name'],
+                'Is Active': item['is_active'],
+                'Status': item["status"],
+                'Execution in cluster': item['exec_cluster'],
+            } for item in data]
+
+            table = tabulate(data_to_display, headers="keys", tablefmt='plain')
+            print(table)
+        else:
+            print('error')
+
+    def job_create(self, *args):
+        """
+        Deploy an ROS2 application through a deployment desciption file 
+        or select software module from software manager.
+        args: 
+            - file: deployment description file
+
+        """
+        parser = argparse.ArgumentParser(
+            description='Create a batch jobs'
+        )
+        parser.add_argument('-f', required=True, help='YAML file')
+        args = parser.parse_args(args)
+
+        try:
+            with open(args.f, "r") as yaml_file:
+
+                deploy_content = yaml.safe_load(yaml_file)
+                rosparam_yamls = self.load_yaml_files_from_parammap(deploy_content)
+
+                # call api server
+                _, response = self.__api_call(
+                    'POST',
+                    f'{self.api_server}/{endpoints.BATCH_JOB}',
+                    json_data={
+                        'deployment_manifest': deploy_content,
+                        'rosparam_yamls': rosparam_yamls
+                    },
+                    auth_token=self.auth_token
+                )
+                print (response)
+
+        except FileNotFoundError:
+            print(f'Deployment description file: {args.f} not found.')
+            sys.exit(1)
+
+    
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
         """
@@ -542,6 +621,7 @@ class KuberosCli():
 
     def cluster_reset(self, *args):
         """
+        # CHECK - DEPRECATED
         Reset the cluster that managed by KubeROS
             - clean labels
             - remove all kuberos related resources
