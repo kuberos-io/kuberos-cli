@@ -1,29 +1,37 @@
 apiVersion: v1alpha
 kind: BatchJob
 metadata:
-  name: hello-humble-jobs
+  name: hello-eva
   rosVersion: humble
   appVersion: dev-1
+  cluster: ['kube']
   edgeResourceGroup: ['public'] # default
 
 
 jobSpec:
-  - name: batch-evaluation-nav2
-    maxParallelism: 10
-    maxRetry: 3
-    timeout: 5m
-    lifeCycleTopic: /lifecycle_state
-    variables:
-      # KubeROS generates job set with all possible combinations of following parameters
-      - toRosParamMap: helloworld-launch-parameters
-        keyName: init_topic
-        valueList: ['kube1', 'kube2', 'kube3', 'kube4']
-      - toRosParamMap: helloworld-launch-parameters
-        keyName: use_sim
-        valueList: [true, false]
-    repeatRosModule:
-      - rosModuleName: task_controller
-        repeatNum: 100
+  maxParallelism: 10
+  maxRetry: 3
+  timeout: 5m
+  lifeCycleModule: task_controller
+  
+  varyingParameters:
+    # KubeROS generates job set with all possible combinations of following parameters
+    - toRosParamMap: helloworld-launch-parameters
+      keyName: init_topic
+      valueList: ['kube1', 'kube2', 'kube3', 'kube4']
+
+    - toRosParamMap: helloworld-launch-parameters
+      keyName: use_sim
+      valueList: [true, false]
+
+  repeatRosModule:
+    - rosModuleName: task_controller
+      repeatNum: 100
+
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "2Gi"
 
 rosModules:
   - name: hello-world-talker
@@ -40,7 +48,7 @@ rosModules:
       robot_ip: {SIM_ARM.ROBOT_IP} # hardware specific parameters -> Uppercase
       init_topic: {launch_parameters.init_topic}
 
-    requirements: 
+    requirements:
       latency: 50ms
       dynamicRescheduling: false
       privilege: true
