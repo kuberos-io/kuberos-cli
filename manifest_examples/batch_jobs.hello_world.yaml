@@ -4,29 +4,29 @@ metadata:
   name: hello-eva
   rosVersion: humble
   appVersion: dev-1
-  cluster: ['kube']
+  execClusters: ['kube']
   edgeResourceGroup: ['public'] # default
 
 
 jobSpec:
   maxParallelism: 10
   maxRetry: 3
-  timeout: 5m
-  lifeCycleModule: task_controller
+  startupTimeout: 300 # sec.
+  runningTimeout: 300 # sec.
   
   varyingParameters:
     # KubeROS generates job set with all possible combinations of following parameters
     - toRosParamMap: helloworld-launch-parameters
-      keyName: init_topic
+      paramName: init_topic
       valueList: ['kube1', 'kube2', 'kube3', 'kube4']
 
     - toRosParamMap: helloworld-launch-parameters
-      keyName: use_sim
+      paramName: use_sim
       valueList: [true, false]
 
-  repeatRosModule:
-    - rosModuleName: task_controller
-      repeatNum: 100
+  lifecycleModule:
+    rosModuleName: task_coordinator
+    repeatNum: 10
 
   resources:
     requests:
@@ -94,7 +94,7 @@ rosModules:
       containerRuntime: containerd/docker # placeholder for the future
       useBridge: false # after parser, the target cluster should be injected.
 
-  - name: task_controller
+  - name: task_coordinator
     image: metagoto/ros2-basic-examples:v2-param
 
     entrypoint: ["ros2 run examples_rclpy_minimal_subscriber subscriber_lambda"]
