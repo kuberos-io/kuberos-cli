@@ -344,7 +344,23 @@ class KuberosCli():
             print(f'Deployment description file: {args.f} not found.')
             sys.exit(1)
 
-    
+    def job_delete(self, *args):
+        """
+        Terminate and delete a batch job deployment
+        """
+        parser = argparse.ArgumentParser(
+            description='Delete a batch job deployment'
+        )
+        parser.add_argument('deployment_name', help='Name of the deployment')
+        args = parser.parse_args(args)
+
+        url = f'{endpoints.BATCH_JOB}{args.deployment_name}/'
+        _, response = self.__api_call('DELETE',
+                                      f'{self.api_server}/{url}',
+                                      auth_token=self.auth_token)
+        print(response)
+
+
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
         """
