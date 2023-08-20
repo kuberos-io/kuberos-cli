@@ -415,7 +415,8 @@ class KuberosCli():
             description='Get cluster details'
         )
         parser.add_argument('cluster_name', help='Name of the cluster')
-        parser.add_argument('-sync', action='store_true', help='Sync the cluster with Kuberos')
+        parser.add_argument('-s', action='store_true', help='Sync the cluster with Kuberos')
+        parser.add_argument('-u', action='store_true', help='Get current resource usage')
         parser.add_argument('-output', help='Output format: table / json / yaml')
         args = parser.parse_args(args)
 
@@ -425,7 +426,8 @@ class KuberosCli():
                                         f'{self.api_server}/{url}',
                                         auth_token=self.auth_token,
                                         data={
-                                            'sync': args.sync
+                                            'sync': args.s,
+                                            'get_usage': args.u
                                         })
         if success:
             if response['status'] == 'failed':
@@ -456,6 +458,7 @@ class KuberosCli():
                 edge_nodes = []
                 control_plane_nodes = []
                 unassigned_nodes = []
+                resource_usage = []
 
                 for node in data['cluster_node_set']:
                     # onboard computers
@@ -500,6 +503,23 @@ class KuberosCli():
                                 'AVAILABLE': node['is_available'],
                                 'REACHABLE': node['is_alive'],})
 
+                    # resoruce usage and capacity
+                    use = node['get_usage']
+                    cap = node['get_capacity']
+                    display_usage_conditions = [
+                        use['cpu'] != 'N/A',
+                        use['memory'] != 'N/A',
+                        use['storage'] != 'N/A',
+                    ]
+                    if all(display_usage_conditions):
+                        resource_usage.append({
+                            'HOSTNAME': node['hostname'],
+                            'CPU (Cores)': f"{use['cpu']:.2f}/{cap['cpu']} ({use['cpu']/cap['cpu']*100:.1f}%)",
+                            'Memory (Gb)': f"{use['memory']:.2f}/{cap['memory']:.1f} ({use['memory']/cap['memory']*100:.1f}%)",
+                            # 'Storage (Gb)': f"{use['storage']:.2f}/{cap['storage']:.1f} ({use['storage']/cap['storage']*100:.1f}%)"
+                            'Storage (Gb)': f"N/A/{cap['storage']:.1f}"
+                        })
+
                 # display data
                 num_of_single_dash = 80
                 if len(onboard_devices) > 0:
@@ -524,6 +544,14 @@ class KuberosCli():
                     print('Control Plane Nodes')
                     print('-' * num_of_single_dash)
                     table = tabulate(control_plane_nodes, headers="keys", tablefmt='plain')
+                    print(table)
+                    print('\n')
+
+                # print resource usages
+                if all(display_usage_conditions):
+                    print('Resource Usages')
+                    print('-' * num_of_single_dash)
+                    table = tabulate(resource_usage, headers="keys", tablefmt='plain')
                     print(table)
                     print('\n')
         else:
