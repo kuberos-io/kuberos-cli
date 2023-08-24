@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ApplicationDeployment
+metadata:
+  name: nav2
+  rosVersion: humble
+  appVersion: dev-1
+  targetFleet: xx
+  # targetFleet: iras-fleet
+  # targetRobots: ['simbot-1']
+  edgeResourceGroup: ['public'] # default
+
+rosModules:
+  - name: simulated-robot
+    image: metagoto/nav2_sim_humble:v1.2.2-cyclone
+    entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch nav2_edge_eval nav2_edge_eval_launch.py rosbag_record:=true"]
+    sourceWs: /ws/install
+    preference: [onboard] # Preference for scheduler
+
+    requirements: 
+      latency: 50ms
+      dynamicRescheduling: false
+      privilege: true
+      peripheral: ['ur-robot'] 
+      nvidia: false # placeholder for the future
+      containerRuntime: containerd/docker # placeholder for the future
+
+    launchParameters: # Placeholder -> Not used in this example
+      # args used in the launch file
+      # robot_ip: {UR_ROBOT.ROBOT_IP} # hardware specific parameters -> Uppercase
+      # ur_type: {UR_ROBOT.UR_TYPE}
+      # init_topic: {launch_parameters.init_topic} # custom setup -> Lowercase 
+
+    # To make this module reusable, you shouldn't change the rosmodule description
+    # To use custom configuration, you can define your parameters in rosParameters/staticFiles section. 
+    # In KubeROS Abstraction: code / configuration / file are separated!
+    rosParameters: 
+      - name: launch-parameters
+        type: key-value
+        valueFrom: ign-parameters
+
+    advances:
+      - name: second-network-interface
+        type: network-plugin-macvlan
+        parameters:
+          master: enxfc8fc40c377d
+
+  - name: robot-nav2-task
+    image: metagoto/nav2_sim_humble:v1.2.2-cyclone
+    # image: metagoto/nav2_sim_humble:v1.2.1
+    entrypoint: ["ros2 topic list; sleep 10; ros2 topic list; sleep 10; ros2 topic list"]
+    sourceWs: /ws/install
+
+    preference: [onboard] # Preference for scheduler
+    requirements: 
+      nvidia: false # placeholder for the future
+      containerRuntime: containerd/docker # placeholder for the future
+      useBridge: false # after parser, the target cluster should be injected.
+    
+rosParamMap:
+  # custom parameters
+  - name: ign-parameters
+    type: key-value
+    data:
+      IGN_PARTITION: 'sim'
+      STARTX11: true
+      NOVNC_ENABLE: true
+      WINDOW_MANAGER_ENABLE: true
+      SIZEW: '1920'
+      SIZEH: '1080'
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      # ROS_DOMAIN_ID: '3'
