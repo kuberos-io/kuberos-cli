@@ -1,17 +1,17 @@
 apiVersion: v1
 kind: ApplicationDeployment
 metadata:
-  name: hello-world-humble-dev
+  name: hi
   rosVersion: humble
   appVersion: dev-1
-  targetFleet: bw1-fleet
-  targetRobots: ['simbot-1']
+  targetFleet: xx # bw0-fleet # xx
+  # targetRobots: ['simbot-2']
   edgeResourceGroup: ['public'] # default
 
 rosModules:
   - name: hello-world-talker
     image: metagoto/ros2-basic-examples:v2-param
-    containerRegistry: default # Optional, if not specified, use the default registry
+    containerRegistryName: default # Optional, if not specified, use the default registry
     
     entrypoint: ["ros2 launch examples_rclpy_minimal_publisher publisher.launch.py"]
     sourceWs: /workspace/install   # Optional, you can also do it in Dockerfile
@@ -20,7 +20,7 @@ rosModules:
     
     launchParameters: # Placeholder -> Not used in this example
       # args used in the launch file
-      robot_ip: {SIM_ARM.ROBOT_IP} # hardware specific parameters -> Uppercase
+      # robot_ip: {SIM_ARM.ROBOT_IP} # hardware specific parameters -> Uppercase
       init_topic: {launch_parameters.init_topic}
 
     requirements: 
@@ -46,7 +46,7 @@ rosModules:
         type: yaml
         valueFrom: publisher-param.yaml
         mountPath: /workspace/config/minimal_publisher
-        
+
 
     staticFiles: 
       - name: ml_weights_container
@@ -60,8 +60,8 @@ rosModules:
     entrypoint: ["ros2 run examples_rclpy_minimal_subscriber subscriber_lambda"]
     sourceWs: /workspace/install
 
-    preference: [edge, onboard] # Preference for scheduler
-    requirements: 
+    preference: [edge] # Preference for scheduler
+    requirements:
       latency: 50ms
       dynamicRescheduling: false
       privilege: true
@@ -82,7 +82,6 @@ rosParamMap:
   - name: publisher-param.yaml
     type: yaml
     path: /Users/yongzhouzhang/coding_ws/kuberos/kuberos-cli/manifest_examples/deploy_hello_world/configs/publisher_param.yml
-  
   
 
 staticFileMap: 
@@ -106,6 +105,6 @@ staticFileMap:
 # Provide the registry credential to pull the image
 containerRegistry:
   - name: default
-    imagePullSecret: 'kuberos-fogrobo-registry-token-test'
+    imagePullSecretName: 'kuberos-fogrobo-registry-token-test'
     imagePullPolicy: 'Always'
 
