@@ -282,32 +282,6 @@ class KuberosCli():
         getattr(self, f'job_{args.subcommand}')(*sys.argv[3:])
 
 
-    def job_list(self, *args):
-        """
-        List all batchjob deployment
-        """
-        parser = argparse.ArgumentParser(
-            description='List the registered clusters in kuberos'
-        )
-        args = parser.parse_args(args)
-        # call api server
-        success, response = self.__api_call('GET', f'{self.api_server}/{endpoints.BATCH_JOB}',
-                                        auth_token=self.auth_token)
-
-        if success:
-            data = response['data']
-            data_to_display = [{
-                'Batch jobs name': item['name'],
-                'Is Active': item['is_active'],
-                'Status': item["status"],
-                'Execution in cluster': item['exec_cluster'],
-            } for item in data]
-
-            table = tabulate(data_to_display, headers="keys", tablefmt='plain')
-            print(table)
-        else:
-            print('error')
-
     def job_create(self, *args):
         """
         Deploy an ROS2 application through a deployment desciption file 
@@ -343,6 +317,86 @@ class KuberosCli():
         except FileNotFoundError:
             print(f'Deployment description file: {args.f} not found.')
             sys.exit(1)
+
+
+    def job_info(self, *args):
+        """
+        Retrieve the batch job status
+        """
+        parser = argparse.ArgumentParser(
+            description='Get cluster details'
+        )
+        parser.add_argument('batch_job_name', help='Batch job name')
+        parser.add_argument('-o', help='Output format: detail')
+        args = parser.parse_args(args)
+
+        # call API server
+        url = f'{endpoints.BATCH_JOB}{args.batch_job_name}/'
+        success, response = self.__api_call('GET',
+                                        f'{self.api_server}/{url}',
+                                        auth_token=self.auth_token,)
+
+        if success:
+            if response['status'] == 'failed':
+                print("Retrieve cluster status failed.")
+                print("Errors: ")
+                print(response['errors'])
+                sys.exit(1)
+
+            # print batch job infos
+            data = response['data']
+            print('\n')
+            print(f"Batch Job Name: {data['name']}")
+            print(f"Status: {data['status']}")
+            print(f"Executed clusters: {data['exec_clusters']}")
+            print('='*60)
+            # Job Queues
+            job_queues_to_display = [{
+                'ID': item['group_postfix'],
+                # 'Status': item['status'],
+                'Exec Cluster': item['job_statistics']['exec_cluster'],
+                'Jobs': item['repeat_num'],
+                'Pending': item['job_statistics']['pending'],
+                'Completed': item['job_statistics']['success'],
+                'In Processing': item['job_statistics']['processing']
+            } for item in data['batch_job_group_set']]
+            table = tabulate(job_queues_to_display, headers="keys", tablefmt='plain')
+            print(table)
+
+            if args.o == 'detail':
+                print('More details')
+
+        else:
+            print("[FATAL] Unknown error.")
+
+    def job_list(self, *args):
+        """
+        List all batchjobs
+        """
+        parser = argparse.ArgumentParser(
+            description='List the batchjob deployment'
+        )
+        parser.add_argument('-v', help='Verbose output')
+        args = parser.parse_args(args)
+        # call api server
+        success, response = self.__api_call('GET',
+                                            f'{self.api_server}/{endpoints.BATCH_JOB}',
+                                            auth_token=self.auth_token)
+        if success:
+            data = response['data']
+            data_to_display = [{
+                'Name': item['name'],
+                'Status': item['status'],
+                'Exec. Clusters': item["exec_clusters"],
+                'Started Since': item['started_since'],
+                'Duration': item['execution_time'],
+            } for item in data]
+
+            table = tabulate(data_to_display, headers="keys", tablefmt='plain')
+            print(table)
+
+        else:
+            print("[FATAL] Unknown error.")
 
     def job_delete(self, *args):
         """
@@ -507,9 +561,9 @@ class KuberosCli():
                     use = node['get_usage']
                     cap = node['get_capacity']
                     display_usage_conditions = [
-                        use['cpu'] != 'N/A',
-                        use['memory'] != 'N/A',
-                        use['storage'] != 'N/A',
+                        use['cpu'] > 0,
+                        use['memory'] > 0,
+                        use['storage'] > 0,
                     ]
                     if all(display_usage_conditions):
                         resource_usage.append({
