@@ -6,13 +6,13 @@ metadata:
   appVersion: dev-1
   targetFleet: xx
   # targetFleet: iras-fleet
-  # targetRobots: ['simbot-1']
+  targetRobots: ['simbot-1']
   edgeResourceGroup: ['public'] # default
 
 rosModules:
   - name: simulated-robot
-    image: metagoto/nav2_sim_humble:v1.2.2-cyclone
-    entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch nav2_edge_eval nav2_edge_eval_launch.py rosbag_record:=true"]
+    image: metagoto/nav2_sim_humble:v1.2.3-cyclone
+    entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch nav2_edge_eval nav2_edge_eval.launch.py"]
     sourceWs: /ws/install
     preference: [onboard] # Preference for scheduler
 
@@ -25,6 +25,11 @@ rosModules:
       containerRuntime: containerd/docker # placeholder for the future
 
     launchParameters: # Placeholder -> Not used in this example
+      record_rosbag: {launch-parameters.record_rosbag}
+      world: {launch-parameters.world}
+      headless: {launch-parameters.headless}
+      goal_poses: {launch-parameters.goal_poses}
+
       # args used in the launch file
       # robot_ip: {UR_ROBOT.ROBOT_IP} # hardware specific parameters -> Uppercase
       # ur_type: {UR_ROBOT.UR_TYPE}
@@ -38,14 +43,14 @@ rosModules:
         type: key-value
         valueFrom: ign-parameters
 
-    advances:
-      - name: second-network-interface
-        type: network-plugin-macvlan
-        parameters:
-          master: enxfc8fc40c377d
+    # advances:
+    #   - name: second-network-interface
+    #     type: network-plugin-macvlan
+    #     parameters:
+    #       master: enxfc8fc40c377d
 
   - name: robot-nav2-task
-    image: metagoto/nav2_sim_humble:v1.2.2-cyclone
+    image: metagoto/nav2_sim_humble:v1.2.3-cyclone
     # image: metagoto/nav2_sim_humble:v1.2.1
     entrypoint: ["ros2 topic list; sleep 10; ros2 topic list; sleep 10; ros2 topic list"]
     sourceWs: /ws/install
@@ -68,4 +73,8 @@ rosParamMap:
       SIZEW: '1920'
       SIZEH: '1080'
       RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      record_rosbag: true
+      world: warehouse
+      headless: true
+      goal_poses: '2.0,-0.5,0.0'
       # ROS_DOMAIN_ID: '3'
