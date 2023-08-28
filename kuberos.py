@@ -389,7 +389,7 @@ class KuberosCli():
                 'Status': item['status'],
                 'Exec. Clusters': item["exec_clusters"],
                 'Started Since': item['started_since'],
-                'Duration': item['execution_time'],
+                'Duration': item['execution_time']
             } for item in data]
 
             table = tabulate(data_to_display, headers="keys", tablefmt='plain')
@@ -405,15 +405,59 @@ class KuberosCli():
         parser = argparse.ArgumentParser(
             description='Delete a batch job deployment'
         )
-        parser.add_argument('deployment_name', help='Name of the deployment')
+        parser.add_argument('job_name', help='Name of the deployment')
         args = parser.parse_args(args)
 
-        url = f'{endpoints.BATCH_JOB}{args.deployment_name}/'
+        url = f'{endpoints.BATCH_JOB}{args.job_name}/'
         _, response = self.__api_call('DELETE',
                                       f'{self.api_server}/{url}',
                                       auth_token=self.auth_token)
         print(response)
 
+
+    def job_stop(self, *args):
+        """
+        Stop the batch job execution
+        """
+        parser = argparse.ArgumentParser(
+            description='Stop the batch job execution'
+        )
+        parser.add_argument('job_name', help='Name of the batch job')
+        args = parser.parse_args(args)
+
+        url = f'{endpoints.BATCH_JOB}{args.job_name}/'
+        success, response = self.__api_call('PATCH',
+                                      f'{self.api_server}/{url}',
+                                      auth_token=self.auth_token,
+                                      data={
+                                          'cmd': 'stop'
+                                      })
+        if success:
+            print(response)
+        else:
+            print(f'Error: \n {response}')
+
+    def job_resume(self, *args):
+        """
+        resume the batch job execution
+        """
+        parser = argparse.ArgumentParser(
+            description='Resume the batch job execution'
+        )
+        parser.add_argument('job_name', help='Name of the batch job')
+        args = parser.parse_args(args)
+
+        url = f'{endpoints.BATCH_JOB}{args.job_name}/'
+        success, response = self.__api_call('PATCH',
+                                      f'{self.api_server}/{url}',
+                                      auth_token=self.auth_token,
+                                      data={
+                                          'cmd': 'resume'
+                                      })
+        if success:
+            print(response)
+        else:
+            print(f'Error: \n {response}')
 
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
@@ -526,6 +570,7 @@ class KuberosCli():
                                 'ROBOT_NAME': node.get('robot_name', None),
                                 'HOSTNAME': node['hostname'],
                                 'DEVICE_GROUP': node['device_group'],
+                                'IS_ALIVE': node['is_alive'],
                                 'AVAILABLE': node['is_available'],
                                 'FLEET': fleet_name,
                                 'PERIPHERALS': node.get('peripheral_device_name_list', None),})
@@ -536,6 +581,7 @@ class KuberosCli():
                                 'HOSTNAME': node['hostname'],
                                 'GROUP': node.get('resource_group', None),
                                 'SHARED RESOURCE': node.get('is_shared', None),
+                                'IS_ALIVE': node['is_alive'],
                                 'AVAILABLE': node['is_available'],
                                 'REACHABLE': node['is_alive']})
 
@@ -545,6 +591,7 @@ class KuberosCli():
                                 'HOSTNAME': node['hostname'],
                                 'ROLE': node['kuberos_role'],
                                 'REGISTERED': node['kuberos_registered'],
+                                'IS_ALIVE': node['is_alive'],
                                 'AVAILABLE': node['is_available'],
                                 'REACHABLE': node['is_alive'],})
 
@@ -554,6 +601,7 @@ class KuberosCli():
                                 'HOSTNAME': node['hostname'],
                                 'ROLE': node['kuberos_role'],
                                 'REGISTERED': node['kuberos_registered'],
+                                'IS_ALIVE': node['is_alive'],
                                 'AVAILABLE': node['is_available'],
                                 'REACHABLE': node['is_alive'],})
 
@@ -876,7 +924,7 @@ class KuberosCli():
             # print fleet details
                 # print(data)
                 print(f"Fleet Name: {data['fleet_name']}")
-                print(f"Healthy: {data['healthy']}")
+                print(f"Healthy: {data['is_entire_fleet_healthy']}")
                 print(f"Fleet status: {data['fleet_status']}")
                 print(f"Alive Age: {data['alive_age']}")
                 print(f"Main Cluster: {data['k8s_main_cluster_name']}")
@@ -888,6 +936,7 @@ class KuberosCli():
                         'Id': item['robot_id'],
                         'Hostname': item['cluster_node_name'],
                         'Computer Group': item['onboard_comp_group'],
+                        'Reachable': item['is_fleet_node_alive'],
                         'Status': item['status'],
                         'Shared Resource': item['shared_resource'],
                     } for item in data['fleet_node_set']]
