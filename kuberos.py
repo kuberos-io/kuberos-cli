@@ -14,7 +14,7 @@ from tabulate import tabulate
 # KuberosCLI
 import endpoints
 import help_texts
-
+from utils.collect_data import CollectFilesSSH
 
 def print_helper(help_text):
     """
@@ -471,11 +471,45 @@ class KuberosCli():
             description='Resume the batch job execution'
         )
         parser.add_argument('job_name', help='Name of the batch job')
-        parser.add_argument('-ssh_key', help='ssh_key to access to remote machines')
-        parser.add_argument('-save_to', help='Path in local to store the files')
+        parser.add_argument('--ssh_key', help='ssh_key to access to remote machines')
+        parser.add_argument('--save_to', help='Path in local to store the files')
         args = parser.parse_args(args)
-        
-        
+    
+        url = f'{endpoints.BATCH_DATA}{args.job_name}/'
+        success, response = self.__api_call('GET',
+                                      f'{self.api_server}/{url}',
+                                      auth_token=self.auth_token,
+                                      data={
+                                      })
+        if success:
+            vol_spec = response['data']
+            if vol_spec['type'] == 'nfs':
+                
+                # print(vol_spec)
+                host = vol_spec['volume']['nfs']['server']
+                remote_folder = f"{vol_spec['volume']['nfs']['path']}/{vol_spec['volume_mount']['subPath']}"
+                print(f'Storage host: {host}')
+                print(f'Volume hostpath: {remote_folder}')
+                
+                ssh_key_path = args.ssh_key
+                local_folder = args.save_to
+                
+                collector = CollectFilesSSH(ssh_key_path)
+                username = vol_spec['username'] # 'ubuntu'
+                
+                collector.collect_one(
+                    host=host,
+                    username=username,
+                    remote_folder=remote_folder,
+                    local_folder=local_folder
+                )
+            
+            else:
+                print("Volume type not supported")
+            
+        else:
+            print("Error", response)
+            
     
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
