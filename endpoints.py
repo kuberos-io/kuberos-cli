@@ -1,6 +1,10 @@
 # Deploying
 DEPLOYING = 'api/v1/deploying/deploy_rosmodule/'
 
+# Batch job
+BATCH_JOB = 'api/v1/batch_jobs/batch_jobs/'
+BATCH_DATA = 'api/v1/batch_jobs/data_management/'
+
 
 # Auth
 LOGIN = 'api/v1/auth/user_login/'

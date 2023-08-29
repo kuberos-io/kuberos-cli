@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: BatchJob
+metadata:
+  name: nava
+  rosVersion: humble
+  appVersion: dev-1
+  execClusters: ['azdev']
+  edgeResourceGroup: ['public'] # default
+
+jobSpec:
+  maxParallelism: 10
+  maxRetry: 3
+  startupTimeout: 180 # secs
+  runningTimeout: 360 # secs
+  
+  varyingParameters:
+    # KubeROS generates job set with all possible combinations of following parameters
+    - toRosParamMap: ign-parameters
+      paramName: dummy
+      valueList: ['dummy']
+
+  lifecycleModule:
+    rosModuleName: turtlebot4-sim-all-in-one
+    repeatNum: 4
+
+  volumes:
+    requests: '20Gi'
+
+  resources:
+    numProNode: 1
+    requests:
+      cpu: "1000m"
+      memory: "4Gi"
+      gpu: "1"
+      gpuMemory: "6Gi"
+    optimals:
+      cpu: "6000"
+      memoery: "8Gi"
+
+rosModules:
+  - name: turtlebot4-sim-all-in-one
+    image: metagoto/nav2_sim_humble:v1.2.2-cyclone
+    entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch nav2_edge_eval nav2_edge_eval_launch.py rosbag_record:=true"]
+    sourceWs: /ws/install
+    preference: [onboard] 
+
+    requirements: 
+      latency: 50ms
+      dynamicRescheduling: false
+      privilege: true
+      peripheral: ['ur-robot'] 
+      nvidia: false # placeholder for the future
+      containerRuntime: containerd/docker # placeholder for the future
+
+    launchParameters: # Placeholder -> Not used in this example
+      # robot_ip: {UR_ROBOT.ROBOT_IP} # hardware specific parameters -> Uppercase
+      # init_topic: {launch_parameters.init_topic} # custom setup -> Lowercase 
+
+    rosParameters: 
+      - name: launch-parameters
+        type: key-value
+        valueFrom: ign-parameters
+
+
+
+rosParamMap:
+  # custom parameters
+  - name: ign-parameters
+    type: key-value
+    data:
+      IGN_PARTITION: 'sim'
+      STARTX11: true
+      NOVNC_ENABLE: true
+      WINDOW_MANAGER_ENABLE: true
+      SIZEW: '800'
+      SIZEH: '600'
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      dummy: 'dummy'
+      # localization: 'amcl'
+      # ROS_DOMAIN_ID: '3'

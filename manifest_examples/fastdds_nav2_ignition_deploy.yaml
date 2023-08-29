@@ -1,18 +1,17 @@
 apiVersion: v1
 kind: ApplicationDeployment
 metadata:
-  name: nav2
+  name: nav2-example
   rosVersion: humble
   appVersion: dev-1
-  targetFleet: xx
-  # targetFleet: iras-fleet
-  # targetRobots: ['simbot-1']
+  targetFleet: bw1-fleet
+  targetRobots: ['simbot-1']
   edgeResourceGroup: ['public'] # default
 
 rosModules:
   - name: simulated-robot
-    image: metagoto/nav2_sim_humble:v1.0-cyclonedds
-    entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch tb4_bringup turtlebot4_ignition.launch.py world:=maze slam:=true nav2:=true rviz:=true"]
+    image: metagoto/nav2_sim_humble:v0.1.0
+    entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch tb4_bringup turtlebot4_ignition.launch.py world:=maze slam:=true nav2:=true rviz:=true nav_to_pose:=true"]
 
     preference: [onboard] # Preference for scheduler
 
@@ -40,7 +39,7 @@ rosModules:
 
   - name: robot-nav2-task
     image: metagoto/nav2_sim_humble:v0.1.0
-    entrypoint: ["ros2 topic list; sleep 10; ros2 topic list; sleep 10; ros2 topic list"]
+    entrypoint: ["ros2 topic list"]
 
     preference: [onboard] # Preference for scheduler
     requirements: 
@@ -57,7 +56,5 @@ rosParamMap:
       STARTX11: true
       NOVNC_ENABLE: true
       WINDOW_MANAGER_ENABLE: true
-      SIZEW: '1920'
-      SIZEH: '1080'
       RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
       # ROS_DOMAIN_ID: '3'

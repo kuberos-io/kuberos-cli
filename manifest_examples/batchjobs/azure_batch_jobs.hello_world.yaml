@@ -1,29 +1,48 @@
 apiVersion: v1alpha
 kind: BatchJob
 metadata:
-  name: hello-humble-jobs
+  name: eva-azure
   rosVersion: humble
   appVersion: dev-1
+  execClusters: ['azmi']
   edgeResourceGroup: ['public'] # default
 
 
 jobSpec:
-  - name: batch-evaluation-nav2
-    maxParallelism: 10
-    maxRetry: 3
-    timeout: 5m
-    lifeCycleTopic: /lifecycle_state
-    variables:
-      # KubeROS generates job set with all possible combinations of following parameters
-      - toRosParamMap: helloworld-launch-parameters
-        keyName: init_topic
-        valueList: ['kube1', 'kube2', 'kube3', 'kube4']
-      - toRosParamMap: helloworld-launch-parameters
-        keyName: use_sim
-        valueList: [true, false]
-    repeatRosModule:
-      - rosModuleName: task_controller
-        repeatNum: 100
+  maxParallelism: 10
+  maxRetry: 3
+  startupTimeout: 166 # sec.
+  runningTimeout: 266 # sec.
+  
+  varyingParameters:
+    # KubeROS generates job set with all possible combinations of following parameters
+    - toRosParamMap: helloworld-launch-parameters
+      paramName: init_topic
+      # valueList: ['kube1', 'kube2', 'kube3', 'kube4', 'kube5']
+      valueList: ['kube1', 'kube2']
+
+    - toRosParamMap: helloworld-launch-parameters
+      paramName: use_sim
+      # valueList: [true, false]
+      valueList: [false]
+
+  lifecycleModule:
+    rosModuleName: task-coordinator
+    repeatNum: 6
+
+  volumes:
+    requests: '20Gi'
+
+  resources:
+    numProNode: 1
+    requests:
+      cpu: "1000m"
+      memory: "4Gi"
+      gpu: "1"
+      gpuMemory: "6Gi"
+    optimals:
+      cpu: "2000"
+      memoery: "8Gi"
 
 rosModules:
   - name: hello-world-talker
@@ -37,10 +56,10 @@ rosModules:
     
     launchParameters: # Placeholder -> Not used in this example
       # args used in the launch file
-      robot_ip: {SIM_ARM.ROBOT_IP} # hardware specific parameters -> Uppercase
+      # robot_ip: {SIM_ARM.ROBOT_IP} # hardware specific parameters -> Uppercase
       init_topic: {launch_parameters.init_topic}
 
-    requirements: 
+    requirements:
       latency: 50ms
       dynamicRescheduling: false
       privilege: true
@@ -54,15 +73,18 @@ rosModules:
     # DON'T MODIFY THE ROSMODULE, MODIFY THE ROSPARAMMAP!
     rosParameters: 
       # launch args
+
       - name: launch_parameters
         type: key-value
-        valueFrom: helloworld-launch-parameters
+        valueFrom: helloworld-launch-parameters  
+        # BATCH JOB: Each Job Group get is own postfix as unique identifier!!!
 
       # yaml file to parameter server
-      - name: minimal_publisher_params
-        type: yaml
-        valueFrom: publisher-param.yaml
-        mountPath: /workspace/config/minimal_publisher
+      # TODO: Bug in batchjob
+      # - name: minimal_publisher_params
+      #   type: yaml
+      #   valueFrom: publisher-param.yaml
+      #   mountPath: /workspace/config/minimal_publisher
 
 
     staticFiles: 
@@ -86,10 +108,10 @@ rosModules:
       containerRuntime: containerd/docker # placeholder for the future
       useBridge: false # after parser, the target cluster should be injected.
 
-  - name: task_controller
+  - name: task-coordinator
     image: metagoto/ros2-basic-examples:v2-param
 
-    entrypoint: ["ros2 run examples_rclpy_minimal_subscriber subscriber_lambda"]
+    entrypoint: ["ros2 topic list; sleep 2; ros2 topic list; sleep 2; ros2 topic list"]
     sourceWs: /workspace/install
 
     lifecycleTopic: /lifecycle_state  # string: running, success, failed 
@@ -105,9 +127,9 @@ rosParamMap:
       init_topic: 'KuberROS'
       STARTX11: true
 
-  - name: publisher-param.yaml
-    type: yaml
-    path: /Users/yongzhouzhang/coding_ws/kuberos/kuberos-cli/manifest_examples/deploy_hello_world/configs/publisher_param.yml
+  # - name: publisher-param.yaml
+  #   type: yaml
+  #   path: /Users/yongzhouzhang/coding_ws/kuberos/kuberos-cli/manifest_examples/deploy_hello_world/configs/publisher_param.yml
   
 
 staticFileMap: 

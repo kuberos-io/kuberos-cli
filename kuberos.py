@@ -14,7 +14,7 @@ from tabulate import tabulate
 # KuberosCLI
 import endpoints
 import help_texts
-
+from utils.collect_data import CollectFilesSSH
 
 def print_helper(help_text):
     """
@@ -78,8 +78,6 @@ class KuberosCli():
         or select software module from software manager.
         args: 
             - file: deployment description file
-
-        # TODO: Read the deployment ros parameter yaml file and send the request to API server
         """
         parser = argparse.ArgumentParser(
             description='Deploy an application'
@@ -187,7 +185,7 @@ class KuberosCli():
                                  f'{self.api_server}/{url}',
                                  auth_token=self.auth_token)
         if res['status'] == 'success':
-            
+
             data = res['data']
 
             # meta info
@@ -250,6 +248,7 @@ class KuberosCli():
         _, response = self.__api_call('GET',
                                       f'{self.api_server}/{endpoints.DEPLOYMENT}',
                                       auth_token=self.auth_token)
+        
         if response['status'] == 'success':
             data = response['data']
             data_to_display = [{
@@ -265,6 +264,253 @@ class KuberosCli():
             print(response)
 
 
+    ### BATCH JOBS ###
+    def job(self, *args):
+        """
+        Batch jobs command
+        """
+        parser = argparse.ArgumentParser(
+            description='Submit batch jobs',
+            usage=help_texts.BATCH_JOB,
+        )
+        parser.add_argument('subcommand', help='Subcommand to run')
+        args = parser.parse_args(args[:1])
+        # call subcommand
+        if not hasattr(self, f'job_{args.subcommand}'):
+            print(f'[Error] -- Unrecognized command: {args.subcommand}')
+            sys.exit(1)
+        getattr(self, f'job_{args.subcommand}')(*sys.argv[3:])
+
+
+    def job_create(self, *args):
+        """
+        Deploy an ROS2 application through a deployment desciption file 
+        or select software module from software manager.
+        args: 
+            - file: deployment description file
+
+        """
+        parser = argparse.ArgumentParser(
+            description='Create a batch jobs'
+        )
+        parser.add_argument('-f', required=True, help='YAML file')
+        args = parser.parse_args(args)
+
+        try:
+            with open(args.f, "r") as yaml_file:
+
+                deploy_content = yaml.safe_load(yaml_file)
+                rosparam_yamls = self.load_yaml_files_from_parammap(deploy_content)
+
+                # call api server
+                _, response = self.__api_call(
+                    'POST',
+                    f'{self.api_server}/{endpoints.BATCH_JOB}',
+                    json_data={
+                        'deployment_manifest': deploy_content,
+                        'rosparam_yamls': rosparam_yamls
+                    },
+                    auth_token=self.auth_token
+                )
+                print (response)
+
+        except FileNotFoundError:
+            print(f'Deployment description file: {args.f} not found.')
+            sys.exit(1)
+
+
+    def job_info(self, *args):
+        """
+        Retrieve the batch job status
+        """
+        parser = argparse.ArgumentParser(
+            description='Get cluster details'
+        )
+        parser.add_argument('batch_job_name', help='Batch job name')
+        parser.add_argument('-o', help='Output format: detail')
+        args = parser.parse_args(args)
+
+        # call API server
+        url = f'{endpoints.BATCH_JOB}{args.batch_job_name}/'
+        success, response = self.__api_call('GET',
+                                        f'{self.api_server}/{url}',
+                                        auth_token=self.auth_token,)
+
+        if success:
+            if response['status'] == 'failed':
+                print("Retrieve cluster status failed.")
+                print("Errors: ")
+                print(response['errors'])
+                sys.exit(1)
+
+            # print batch job infos
+            data = response['data']
+            print('\n')
+            print(f"Batch Job Name: {data['name']}")
+            print(f"Status: {data['status']}")
+            print(f"Executed clusters: {data['exec_clusters']}")
+            print('='*60)
+            # Job Queues
+            job_queues_to_display = [{
+                'ID': item['group_postfix'],
+                # 'Status': item['status'],
+                'Exec Cluster': item['job_statistics']['exec_cluster'],
+                'Jobs': item['repeat_num'],
+                'Pending': item['job_statistics']['pending'],
+                'Completed': item['job_statistics']['completed'],
+                'In Processing': item['job_statistics']['processing']
+            } for item in data['batch_job_group_set']]
+            table = tabulate(job_queues_to_display, headers="keys", tablefmt='plain')
+            print(table)
+
+            if args.o == 'detail':
+                print('More details')
+
+        else:
+            print("[FATAL] Unknown error.")
+
+    def job_list(self, *args):
+        """
+        List all batchjobs
+        """
+        parser = argparse.ArgumentParser(
+            description='List the batchjob deployment'
+        )
+        parser.add_argument('-v', help='Verbose output')
+        args = parser.parse_args(args)
+        # call api server
+        success, response = self.__api_call('GET',
+                                            f'{self.api_server}/{endpoints.BATCH_JOB}',
+                                            auth_token=self.auth_token)
+        if success:
+            data = response['data']
+            data_to_display = [{
+                'Name': item['name'],
+                'Status': item['status'],
+                'Exec. Clusters': item["exec_clusters"],
+                'Started Since': item['started_since'],
+                'Duration': item['execution_time']
+            } for item in data]
+
+            table = tabulate(data_to_display, headers="keys", tablefmt='plain')
+            print(table)
+
+        else:
+            print("[FATAL] Unknown error.")
+
+    def job_delete(self, *args):
+        """
+        Terminate and delete a batch job deployment
+        """
+        parser = argparse.ArgumentParser(
+            description='Delete a batch job deployment'
+        )
+        parser.add_argument('job_name', help='Name of the deployment')
+        parser.add_argument('-hard', action='store_true', help="Delete Batch job will from database. [BE CAREFUL!]")
+        args = parser.parse_args(args)
+
+        url = f'{endpoints.BATCH_JOB}{args.job_name}/'
+        _, response = self.__api_call('DELETE',
+                                      f'{self.api_server}/{url}',
+                                      auth_token=self.auth_token,
+                                      data = {
+                                          'hard_delete': args.hard
+                                      })
+        print(response)
+
+
+    def job_stop(self, *args):
+        """
+        Stop the batch job execution
+        """
+        parser = argparse.ArgumentParser(
+            description='Stop the batch job execution'
+        )
+        parser.add_argument('job_name', help='Name of the batch job')
+        args = parser.parse_args(args)
+
+        url = f'{endpoints.BATCH_JOB}{args.job_name}/'
+        success, response = self.__api_call('PATCH',
+                                      f'{self.api_server}/{url}',
+                                      auth_token=self.auth_token,
+                                      data={
+                                          'cmd': 'stop'
+                                      })
+        if success:
+            print(response)
+        else:
+            print(f'Error: \n {response}')
+
+    def job_resume(self, *args):
+        """
+        resume the batch job execution
+        """
+        parser = argparse.ArgumentParser(
+            description='Resume the batch job execution'
+        )
+        parser.add_argument('job_name', help='Name of the batch job')
+        args = parser.parse_args(args)
+
+        url = f'{endpoints.BATCH_JOB}{args.job_name}/'
+        success, response = self.__api_call('PATCH',
+                                      f'{self.api_server}/{url}',
+                                      auth_token=self.auth_token,
+                                      data={
+                                          'cmd': 'resume'
+                                      })
+        if success:
+            print(response)
+        else:
+            print(f'Error: \n {response}')
+    
+    def job_collect(self, *args):
+        """
+        Collect the batch job result.
+        """
+        parser = argparse.ArgumentParser(
+            description='Resume the batch job execution'
+        )
+        parser.add_argument('job_name', help='Name of the batch job')
+        parser.add_argument('--ssh_key', help='ssh_key to access to remote machines')
+        parser.add_argument('--save_to', help='Path in local to store the files')
+        args = parser.parse_args(args)
+    
+        url = f'{endpoints.BATCH_DATA}{args.job_name}/'
+        success, response = self.__api_call('GET',
+                                      f'{self.api_server}/{url}',
+                                      auth_token=self.auth_token,
+                                      data={
+                                      })
+        if success:
+            vol_spec = response['data']
+            if vol_spec['type'] == 'nfs':
+                
+                # print(vol_spec)
+                host = vol_spec['volume']['nfs']['server']
+                remote_folder = f"{vol_spec['volume']['nfs']['path']}/{vol_spec['volume_mount']['subPath']}"
+                print(f'Storage host: {host}')
+                print(f'Volume hostpath: {remote_folder}')
+                
+                ssh_key_path = args.ssh_key
+                local_folder = args.save_to
+                
+                collector = CollectFilesSSH(ssh_key_path)
+                username = vol_spec['username'] # 'ubuntu'
+                
+                collector.collect_one(
+                    host=host,
+                    username=username,
+                    remote_folder=remote_folder,
+                    local_folder=local_folder
+                )
+            
+            else:
+                print("Volume type not supported")
+            
+        else:
+            print("Error", response)
+            
+    
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
         """
@@ -319,7 +565,8 @@ class KuberosCli():
             description='Get cluster details'
         )
         parser.add_argument('cluster_name', help='Name of the cluster')
-        parser.add_argument('-sync', action='store_true', help='Sync the cluster with Kuberos')
+        parser.add_argument('-s', action='store_true', help='Sync the cluster with Kuberos')
+        parser.add_argument('-u', action='store_true', help='Get current resource usage')
         parser.add_argument('-output', help='Output format: table / json / yaml')
         args = parser.parse_args(args)
 
@@ -329,7 +576,8 @@ class KuberosCli():
                                         f'{self.api_server}/{url}',
                                         auth_token=self.auth_token,
                                         data={
-                                            'sync': args.sync
+                                            'sync': args.s,
+                                            'get_usage': args.u
                                         })
         if success:
             if response['status'] == 'failed':
@@ -360,6 +608,7 @@ class KuberosCli():
                 edge_nodes = []
                 control_plane_nodes = []
                 unassigned_nodes = []
+                resource_usage = []
 
                 for node in data['cluster_node_set']:
                     # onboard computers
@@ -373,6 +622,7 @@ class KuberosCli():
                                 'ROBOT_NAME': node.get('robot_name', None),
                                 'HOSTNAME': node['hostname'],
                                 'DEVICE_GROUP': node['device_group'],
+                                'IS_ALIVE': node['is_alive'],
                                 'AVAILABLE': node['is_available'],
                                 'FLEET': fleet_name,
                                 'PERIPHERALS': node.get('peripheral_device_name_list', None),})
@@ -383,6 +633,7 @@ class KuberosCli():
                                 'HOSTNAME': node['hostname'],
                                 'GROUP': node.get('resource_group', None),
                                 'SHARED RESOURCE': node.get('is_shared', None),
+                                'IS_ALIVE': node['is_alive'],
                                 'AVAILABLE': node['is_available'],
                                 'REACHABLE': node['is_alive']})
 
@@ -392,6 +643,7 @@ class KuberosCli():
                                 'HOSTNAME': node['hostname'],
                                 'ROLE': node['kuberos_role'],
                                 'REGISTERED': node['kuberos_registered'],
+                                'IS_ALIVE': node['is_alive'],
                                 'AVAILABLE': node['is_available'],
                                 'REACHABLE': node['is_alive'],})
 
@@ -401,8 +653,26 @@ class KuberosCli():
                                 'HOSTNAME': node['hostname'],
                                 'ROLE': node['kuberos_role'],
                                 'REGISTERED': node['kuberos_registered'],
+                                'IS_ALIVE': node['is_alive'],
                                 'AVAILABLE': node['is_available'],
                                 'REACHABLE': node['is_alive'],})
+
+                    # resoruce usage and capacity
+                    use = node['get_usage']
+                    cap = node['get_capacity']
+                    display_usage_conditions = [
+                        use['cpu'] > 0,
+                        use['memory'] > 0,
+                        use['storage'] > 0,
+                    ]
+                    if all(display_usage_conditions):
+                        resource_usage.append({
+                            'HOSTNAME': node['hostname'],
+                            'CPU (Cores)': f"{use['cpu']:.2f}/{cap['cpu']} ({use['cpu']/cap['cpu']*100:.1f}%)",
+                            'Memory (Gb)': f"{use['memory']:.2f}/{cap['memory']:.1f} ({use['memory']/cap['memory']*100:.1f}%)",
+                            # 'Storage (Gb)': f"{use['storage']:.2f}/{cap['storage']:.1f} ({use['storage']/cap['storage']*100:.1f}%)"
+                            'Storage (Gb)': f"N/A/{cap['storage']:.1f}"
+                        })
 
                 # display data
                 num_of_single_dash = 80
@@ -428,6 +698,14 @@ class KuberosCli():
                     print('Control Plane Nodes')
                     print('-' * num_of_single_dash)
                     table = tabulate(control_plane_nodes, headers="keys", tablefmt='plain')
+                    print(table)
+                    print('\n')
+
+                # print resource usages
+                if all(display_usage_conditions):
+                    print('Resource Usages')
+                    print('-' * num_of_single_dash)
+                    table = tabulate(resource_usage, headers="keys", tablefmt='plain')
                     print(table)
                     print('\n')
         else:
@@ -541,6 +819,7 @@ class KuberosCli():
 
     def cluster_reset(self, *args):
         """
+        # CHECK - DEPRECATED
         Reset the cluster that managed by KubeROS
             - clean labels
             - remove all kuberos related resources
@@ -697,7 +976,7 @@ class KuberosCli():
             # print fleet details
                 # print(data)
                 print(f"Fleet Name: {data['fleet_name']}")
-                print(f"Healthy: {data['healthy']}")
+                print(f"Healthy: {data['is_entire_fleet_healthy']}")
                 print(f"Fleet status: {data['fleet_status']}")
                 print(f"Alive Age: {data['alive_age']}")
                 print(f"Main Cluster: {data['k8s_main_cluster_name']}")
@@ -709,6 +988,7 @@ class KuberosCli():
                         'Id': item['robot_id'],
                         'Hostname': item['cluster_node_name'],
                         'Computer Group': item['onboard_comp_group'],
+                        'Reachable': item['is_fleet_node_alive'],
                         'Status': item['status'],
                         'Shared Resource': item['shared_resource'],
                     } for item in data['fleet_node_set']]
@@ -1084,12 +1364,12 @@ class KuberosCli():
 
 
     ### INFO ###
-    @print_helper(help_text=help_texts.info)
-    def info(self, *args):
-        parser = argparse.ArgumentParser(
-            description='Display the Kuberos main api server information',
-            usage=help_texts.info
-        )
+    # @print_helper(help_text=help_texts.info)
+    # def info(self, *args):
+    #     parser = argparse.ArgumentParser(
+    #         description='Display the Kuberos main api server information',
+    #         usage=help_texts.info
+    #     )
 
     def print_helper(self):
         print(help_texts.help_text_summary)
@@ -1098,7 +1378,7 @@ class KuberosCli():
         argcomplete.autocomplete(self.parser)
 
 
-def main ():
+def main():
     cli = KuberosCli()
    #  cli.autocomplete()
 

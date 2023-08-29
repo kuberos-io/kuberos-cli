@@ -4,8 +4,9 @@ This repo contains the cli tools for users to interact with KubeROS platform.
 
 ## Setup
 
-```
+```bash
 pip install -r requirements.txt
+chmod +x kuberos.py
 ```
 
 ## Basic Commands
@@ -30,6 +31,36 @@ KubeROS follows the style of ROS2 CLI. Run `kuberos.py` or `kuberos --help` to g
 kuberos <command> <verb> <-args>
 ```
 
+
+Get the cluster status using `./kuberos.py cluster info -sync <cluster-name>`. 
+```t
+Cluster Name: kube
+API Server: https://<api-server-ip>:6443
+Alive Age: 4 minutes
+Since Last Sync: 0 minutes
+
+
+Robot Onboard Computers
+--------------------------------------------------------------------------------
+ROBOT_NAME    HOSTNAME        DEVICE_GROUP    AVAILABLE    FLEET    PERIPHERALS
+simbot-1      kube-simbot-01  simbot-pc       True         N/A      ['rs-d435']
+simbot-2      kube-simbot-02  simbot-pc       True         N/A      ['rs-d435']
+
+
+Edge Nodes
+--------------------------------------------------------------------------------
+HOSTNAME             GROUP    SHARED RESOURCE    AVAILABLE    REACHABLE
+kube-edge-worker-01  public   True               True         True
+kube-edge-worker-02  public   True               True         True
+
+
+Control Plane Nodes
+--------------------------------------------------------------------------------
+HOSTNAME     ROLE           REGISTERED    AVAILABLE    REACHABLE
+kube-master  control_plane  True          False        True
+```
+
+
 For example, check the status of the target fleet before deploying a new application. 
 
 ```t
@@ -50,8 +81,8 @@ simbot-2         2  iras-irl4-lin   simbot-pc         deployable  False
 
 
 ## TODOs: 
- - [] Separate the code into subcommand modules, similiar to ros2cli 
- - [] Add auto-completion
+ - [ ] Separate the code into subcommand modules, similiar to ros2cli 
+ - [ ] Add auto-completion
 
 
 ## Issues: 

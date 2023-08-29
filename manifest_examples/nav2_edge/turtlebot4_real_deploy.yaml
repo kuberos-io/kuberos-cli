@@ -61,3 +61,10 @@ rosParamMap:
       SIZEH: '1080'
       RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
       # ROS_DOMAIN_ID: '3'
+
+plugins:
+  - name: second-network-interface
+    type: network-plugin-macvlan
+    parameters:
+      master: enxfc8fc40c377d
+

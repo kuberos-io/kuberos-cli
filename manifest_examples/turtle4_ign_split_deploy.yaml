@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ApplicationDeployment
+metadata:
+  name: nav2
+  rosVersion: humble
+  appVersion: dev-1
+  targetFleet: xx
+  # targetFleet: iras-fleet
+  targetRobots: ['simbot-2']
+  edgeResourceGroup: ['public'] # default
+
+rosModules:
+  - name: simulated-robot
+    image: metagoto/nav2_sim_humble:v0.1.0
+    # entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch tb4_bringup turtlebot4_ignition.launch.py world:=maze rviz:=true"]
+    entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch tb4_bringup turtlebot4_ignition.launch.py world:=maze slam:=false nav2:=false rviz:=true"]
+    preference: [onboard] # Preference for scheduler
+
+    requirements: 
+      privilege: true
+      peripheral: ['ur-robot'] 
+
+    launchParameters: # Placeholder -> Not used in this example
+      # args used in the launch file
+
+    rosParameters: 
+      - name: launch-parameters
+        type: key-value
+        valueFrom: ign-parameters
+
+
+  - name: turtle4-nav2
+    image: metagoto/nav2_sim_humble:v0.1.0
+    # entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch tb4_bringup turtlebot4_ignition.launch.py world:=maze rviz:=true"]
+    entrypoint: ["ros2 launch turtlebot4_navigation nav2.launch.py"]
+
+    preference: [edge] # Preference for scheduler
+
+    requirements: 
+      privilege: true
+      peripheral: ['ur-robot']
+
+  - name: turtle4-slam
+    image: metagoto/nav2_sim_humble:v0.1.0
+    # entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch tb4_bringup turtlebot4_ignition.launch.py world:=maze rviz:=true"]
+    entrypoint: ["ros2 launch turtlebot4_navigation slam.launch.py"]
+
+    preference: [edge] # Preference for scheduler
+
+    requirements: 
+      privilege: true
+      peripheral: ['ur-robot']
+    
+rosParamMap:
+  # custom parameters
+  - name: ign-parameters
+    type: key-value
+    data:
+      IGN_PARTITION: 'sim'
+      STARTX11: true
+      NOVNC_ENABLE: true
+      WINDOW_MANAGER_ENABLE: true
+      SIZEW: '1920'
+      SIZEH: '1080'
+      # RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      # ROS_DOMAIN_ID: '3'
