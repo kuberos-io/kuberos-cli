@@ -1,25 +1,26 @@
 apiVersion: v1alpha
 kind: BatchJob
 metadata:
-  name: eva-05
+  name: eva-azure
   rosVersion: humble
   appVersion: dev-1
-  execClusters: ['kube']
+  execClusters: ['azmi']
   edgeResourceGroup: ['public'] # default
 
 
 jobSpec:
-  # maxParallelism: 10
-  # maxRetry: 3
-  startupTimeout: 15 # sec.
-  runningTimeout: 30 # sec.
+  maxParallelism: 10
+  maxRetry: 3
+  startupTimeout: 166 # sec.
+  runningTimeout: 266 # sec.
   
   varyingParameters:
     # KubeROS generates job set with all possible combinations of following parameters
     - toRosParamMap: helloworld-launch-parameters
       paramName: init_topic
-      valueList: ['kube1', 'kube2', 'kube3',]
-     
+      # valueList: ['kube1', 'kube2', 'kube3', 'kube4', 'kube5']
+      valueList: ['kube1', 'kube2']
+
     - toRosParamMap: helloworld-launch-parameters
       paramName: use_sim
       # valueList: [true, false]
@@ -27,24 +28,21 @@ jobSpec:
 
   lifecycleModule:
     rosModuleName: task-coordinator
-    repeatNum: 8
+    repeatNum: 6
 
-  volume:
-    type: 'localhost' # 'azure_default', 'longhorn'
-    name: test-volume-batchjob
-    mountPath: '/ws/rosbags/'
+  volumes:
     requests: '20Gi'
 
   resources:
-    numProNode: 0
+    numProNode: 1
     requests:
-      cpu: "2000m"
-      memory: "100Mi"
+      cpu: "1000m"
+      memory: "4Gi"
       gpu: "1"
-      gpuMemory: "1Gi"
+      gpuMemory: "6Gi"
     optimals:
-      cpu: "3000m"
-      memoery: "100Mi"
+      cpu: "2000"
+      memoery: "8Gi"
 
 rosModules:
   - name: hello-world-talker
