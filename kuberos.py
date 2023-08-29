@@ -357,7 +357,7 @@ class KuberosCli():
                 'Exec Cluster': item['job_statistics']['exec_cluster'],
                 'Jobs': item['repeat_num'],
                 'Pending': item['job_statistics']['pending'],
-                'Completed': item['job_statistics']['success'],
+                'Completed': item['job_statistics']['completed'],
                 'In Processing': item['job_statistics']['processing']
             } for item in data['batch_job_group_set']]
             table = tabulate(job_queues_to_display, headers="keys", tablefmt='plain')
@@ -406,12 +406,16 @@ class KuberosCli():
             description='Delete a batch job deployment'
         )
         parser.add_argument('job_name', help='Name of the deployment')
+        parser.add_argument('-hard', action='store_true', help="Delete Batch job will from database. [BE CAREFUL!]")
         args = parser.parse_args(args)
 
         url = f'{endpoints.BATCH_JOB}{args.job_name}/'
         _, response = self.__api_call('DELETE',
                                       f'{self.api_server}/{url}',
-                                      auth_token=self.auth_token)
+                                      auth_token=self.auth_token,
+                                      data = {
+                                          'hard_delete': args.hard
+                                      })
         print(response)
 
 
@@ -458,7 +462,21 @@ class KuberosCli():
             print(response)
         else:
             print(f'Error: \n {response}')
-
+    
+    def job_collect(self, *args):
+        """
+        Collect the batch job result.
+        """
+        parser = argparse.ArgumentParser(
+            description='Resume the batch job execution'
+        )
+        parser.add_argument('job_name', help='Name of the batch job')
+        parser.add_argument('-ssh_key', help='ssh_key to access to remote machines')
+        parser.add_argument('-save_to', help='Path in local to store the files')
+        args = parser.parse_args(args)
+        
+        
+    
     ### CLUSTER MANAGEMENT ###
     def cluster(self, *args):
         """
@@ -1326,7 +1344,7 @@ class KuberosCli():
         argcomplete.autocomplete(self.parser)
 
 
-def main ():
+def main():
     cli = KuberosCli()
    #  cli.autocomplete()
 
