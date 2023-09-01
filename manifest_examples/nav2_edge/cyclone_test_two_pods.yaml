@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ApplicationDeployment
+metadata:
+  name: cyclone
+  rosVersion: humble
+  appVersion: dev-1
+  targetFleet: xx
+  targetRobots: ['simbot-1']
+  edgeResourceGroup: ['public'] # default
+
+rosModules:
+  - name: test-pod-1
+    image: metagoto/nav2_sim_humble:v1.2.3-cyclone
+    entrypoint: ["ros2 topic list; sleep 3600; ros2 topic list; sleep 10; ros2 topic list"]
+    sourceWs: /ws/install
+    preference: [onboard] # Preference for scheduler
+
+    requirements: 
+      latency: 50ms
+      dynamicRescheduling: false
+      privilege: true
+      peripheral: ['ur-robot'] 
+      nvidia: false # placeholder for the future
+      containerRuntime: containerd/docker # placeholder for the future
+
+    launchParameters: # Placeholder -> Not used in this example
+      record_rosbag: {launch-parameters.record_rosbag}
+      world: {launch-parameters.world}
+      headless: {launch-parameters.headless}
+      goal_poses: {launch-parameters.goal_poses}
+      experiment_name: {launch-parameters.experiment_name}
+      localization_method: {launch_parameters.localization_method}
+
+      # args used in the launch file
+      # robot_ip: {UR_ROBOT.ROBOT_IP} # hardware specific parameters -> Uppercase
+
+    rosParameters: 
+      - name: launch-parameters
+        type: key-value
+        valueFrom: nav2-edge-eval-parameters
+      - name: environment-variables
+        type: key-value
+        valueFrom: ign-env-parameters
+
+
+  - name: test-pod-2
+    image: metagoto/nav2_sim_humble:v1.2.3-cyclone
+    entrypoint: ["ros2 topic list; sleep 3600; ros2 topic list; sleep 10; ros2 topic list"]
+    sourceWs: /ws/install
+    preference: [onboard] # Preference for scheduler
+
+    rosParameters: 
+      - name: launch-parameters
+        type: key-value
+        valueFrom: nav2-edge-eval-parameters
+      - name: environment-variables
+        type: key-value
+        valueFrom: ign-env-parameters
+
+rosParamMap:
+
+  - name: nav2-edge-eval-parameters
+    type: key-value
+    data:
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      record_rosbag: true
+      world: warehouse # warehouse / maze / depot
+      headless: true
+      goal_poses: '5.0,-0.5,0.0'
+      loop_execution: false
+      experiment_name: test_evaluation
+      localization_method: rtabmap  # slamtoolbox / amcl / rtabmap
+
+  - name: ign-env-parameters
+    type: key-value
+    data:
+      IGN_PARTITION: 'sim'
+      STARTX11: true
+      NOVNC_ENABLE: true
+      WINDOW_MANAGER_ENABLE: true
+      SIZEW: '1920'
+      SIZEH: '1080'

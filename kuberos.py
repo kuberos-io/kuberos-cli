@@ -406,7 +406,8 @@ class KuberosCli():
             description='Delete a batch job deployment'
         )
         parser.add_argument('job_name', help='Name of the deployment')
-        parser.add_argument('-hard', action='store_true', help="Delete Batch job will from database. [BE CAREFUL!]")
+        parser.add_argument('-hard', action='store_true', default=False, 
+                            help="Delete Batch job will from database. [BE CAREFUL!]")
         args = parser.parse_args(args)
 
         url = f'{endpoints.BATCH_JOB}{args.job_name}/'
@@ -934,7 +935,7 @@ class KuberosCli():
                 'Name': item['fleet_name'],
                 'Status': item['fleet_status'],
                 'Alive Age': item['alive_age'],
-                'Healthy': item['healthy'],
+                'Healthy': item['is_entire_fleet_healthy'],
                 'Main Cluster': item['k8s_main_cluster_name'],
                 'Created since': item['created_since'],
             } for item in data]

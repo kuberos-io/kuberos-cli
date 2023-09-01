@@ -16,8 +16,6 @@ Basic Commands:
     
 Management Commands:
 
-    apply        Update the inventory, fleet description
-    
     fleet   
         list     Get the list of fleets
         info     Get a fleet by name
@@ -29,11 +27,24 @@ Management Commands:
     cluster      Manage clusters
         create   Register a new cluster to Kuberos 
                     -f: cluster registration yaml file
+        info     Get cluster info by cluster name
+                    -u: get cluster resource utilization
+                    -s: synchronize immediatelly
         list     List all clusters
         update   Update a cluster inventory description
                     -f: cluster inventory file
         delete   Remove a cluster from Kuberos
         
+    job          Batchjob execution
+        create   Create a new batchjob deployment
+                    -f: batchjob manifest
+        list     List all active batchjobs
+        info     Get batchjob by name
+        delete   Delete a batchjob
+                    -hard: delete from database (BE CAREFUL!!!)
+        stop     Stop a batchjob execution
+        resume   Resume the batchjob execution
+    
     deployment 
         force_delete   Delete a deployment by the name (BE CAREFUL!!! ONLY FOR DEV PURPOSES)
     
@@ -60,7 +71,9 @@ Management Commands:
         search 
         add 
         remove
-        
+    
+    apply        Update the inventory, fleet description
+    
 Setting Commands:
     login        Login to the Kuberos server and save the token to ~/.kuberos/config
     info         Display Kuberos cluster information
@@ -97,14 +110,16 @@ Usage:
 cluster = '''Clusters Management Command
 subcommand:
     create   Register a new cluster to Kuberos 
-                -f: cluster registration yaml file
-    list     List all clusters   ***  GET
+                -f <path-to-yaml>: cluster registration yaml file
+    info     Get cluster info by cluster name
+                -u: get cluster resource utilization
+                -s: synchronize immediatelly
+             ./kuberos.py cluster info -u -s <cluster-name>
+    list     List all clusters
     update   Update a cluster inventory description
-                -f: cluster inventory file
-    info     Get a cluster by the cluster name   *** GET 
-                -sync force sync with kubernetes
+                -f <path-to-yaml>: cluster inventory file
     delete   Remove a cluster from Kuberos
-
+             ./kuberos.py cluster delete <cluster-name>
 '''
 
 
@@ -131,13 +146,30 @@ subcommand:
 ### BATCH JOB
 BATCH_JOB = '''
 Batch Job Management Command
-subcommand:
-    list     List all batchjob 
-    status   Get a batchjob by name
-    delete   Delete a batchjob by the name
+Subcommand:
+    create   Create a new batchjob deployment
+                -f: batchjob manifest
+             ./kuberos.py job create -f <path-to-yaml>
+             
+    list     List all active batchjobs
+             ./kuberos.py job list
+             
+    info     Get batchjob by name
+             ./kuberos.py job info <batchjob-name>
+             
+    delete   Delete a batchjob
+                -hard: delete from database (BE CAREFUL!!!)
+             usually deleting gracefully: ./kueros.py job delete <batchjob-name>
+             in 500 error: ./kueros.py job delete -hard <batchjob-name> # remove from db
+             
+    stop     Stop a batchjob execution
+             ./kuberos.py stop <batchjob-name>
+             
+    resume   Resume the batchjob execution
+             ./kuberos.py resume <batchjob-name>
 '''
 
-### REGISTRY TOKENS  
+### REGISTRY TOKENS
 # TODO
 registry_token = '''Registry Token Management Command
 subcommand:
