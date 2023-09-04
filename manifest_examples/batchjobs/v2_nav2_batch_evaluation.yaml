@@ -18,11 +18,14 @@ jobSpec:
     # KubeROS generates job set with all possible combinations of following parameters
     - toRosParamMap: nav2-edge-eval-parameters
       paramName: world
-      valueList: ['maze']
+
+      valueList: ['maze'] # warehouse
+
 
     - toRosParamMap: nav2-edge-eval-parameters
       paramName: localization_method
       valueList: ['slamtoolbox', 'rtabmap', 'amcl']
+
 
     # - toRosParamMap: nav2-edge-eval-parameters
     #   paramName: goal_poses
@@ -46,10 +49,10 @@ jobSpec:
   resources:
     numProNode: 0
     requests:
-      cpu: "3000m"
+      cpu: "5000m"
       memory: "1Gi"
     optimals:
-      cpu: "6000m"
+      cpu: "8000m"
       memoery: "1Gi"
 
   advances:
@@ -58,7 +61,7 @@ jobSpec:
 
 rosModules:
   - name: turtlebot4-sim-all-in-one
-    image: metagoto/nav2_sim_humble:v1.2.5-cyclone
+    image: metagoto/nav2_sim_humble:v1.2.6-cyclone
     entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch nav2_edge_eval nav2_edge_eval.launch.py"]
     # entrypoint: ["sleep 5"]
     sourceWs: /ws/install
@@ -81,7 +84,7 @@ rosModules:
       goal_poses: {launch-parameters.goal_poses}
       experiment_name: {launch-parameters.experiment_name}
       localization_method: {launch-parameters.localization_method}
-      use_sim_time: {launch-parameters.use_sim_time}
+      # use_sim_time: {launch-parameters.use_sim_time}
 
 
 
@@ -104,13 +107,13 @@ rosParamMap:
       record_rosbag: true
       world: maze # warehouse / maze / depot
       start_pose: '1.0,-0.4,0.0'
-      goal_poses: '2,-2,0;0,-3.5,0;-2,-3,0;0,0,0'
+      goal_poses: "'2,-2,0;0,-3.5,0;-2,-3,0;0,0,0'"
+      # goal_poses: "'1,-1,0'"
       localization_method: rtabmap  # slamtoolbox / amcl / rtabmap
       loop_execution: false
       experiment_name: maze_short_trip
       use_sim_time: true
-      rosbag_topics: '/groundtruth_pose/turtlebot4; /base_link_pose; /tf; /tf_static; /task_status; /diagnostics'
-      
+      rosbag_topics: "'/groundtruth_pose/turtlebot4; /base_link_pose; /tf; /tf_static; /task_status; /diagnostics'"
 
   - name: ign-env-parameters
     type: key-value
