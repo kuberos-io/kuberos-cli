@@ -18,7 +18,11 @@ jobSpec:
     # KubeROS generates job set with all possible combinations of following parameters
     - toRosParamMap: nav2-edge-eval-parameters
       paramName: world
-      valueList: ['maze'] # warehouse
+      valueList: ['warehouse'] # warehouse
+
+    - toRosParamMap: nav2-edge-eval-parameters
+      paramName: world_var
+      valueList: ['C0', 'C1', 'C2'] # warehouse
 
     - toRosParamMap: nav2-edge-eval-parameters
       paramName: localization_method
@@ -77,6 +81,7 @@ rosModules:
       record_rosbag: {launch-parameters.record_rosbag}
       rosbag_topics: {launch-parameters.rosbag_topics}
       world: {launch-parameters.world}
+      world_var: {launch-parameters.world_var}
       headless: {launch-parameters.headless}
       start_pose: {launch_parameters.start_pose}
       goal_poses: {launch-parameters.goal_poses}
@@ -104,6 +109,7 @@ rosParamMap:
 
       record_rosbag: true
       world: maze # warehouse / maze / depot
+      world_var: ''
       start_pose: '1.0,-0.4,0.0'
       goal_poses: "'2,-2,0;0,-3.5,0;-2,-3,0;0,0,0'"
       # goal_poses: "'1,-1,0'"
