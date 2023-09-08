@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: BatchJob
 metadata:
-  name: nav2
-  subname: maze_short_trip126_s2
+  name: nav3
+  subname: t2
   execClusters: ['kube']
   edgeResourceGroup: ['public'] # default
   useRobotResource: true
@@ -22,11 +22,11 @@ jobSpec:
 
     - toRosParamMap: nav2-edge-eval-parameters
       paramName: world_var
-      valueList: ['C0', 'C1', 'C2'] # warehouse
+      valueList: ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6'] # warehouse
 
     - toRosParamMap: nav2-edge-eval-parameters
       paramName: localization_method
-      valueList: ['slamtoolbox', 'rtabmap', 'amcl']
+      valueList: ['rtabmap', 'slamtoolbox', 'amcl']
       # valueList: ['slamtoolbox']
     
 # - toRosParamMap: nav2-edge-eval-parameters
@@ -36,7 +36,7 @@ jobSpec:
 
   lifecycleModule:
     rosModuleName: turtlebot4-sim-all-in-one
-    repeatNum: 6
+    repeatNum: 15
 
   volume:
     type: 'nfs' # 'localhost' / 'nfs' / 'azure_default' / 'longhorn'
@@ -51,10 +51,10 @@ jobSpec:
   resources:
     numProNode: 0
     requests:
-      cpu: "5000m"
+      cpu: "6000m"
       memory: "1Gi"
     optimals:
-      cpu: "8000m"
+      cpu: "7500m"
       memoery: "1Gi"
 
   advances:
@@ -63,7 +63,7 @@ jobSpec:
 
 rosModules:
   - name: turtlebot4-sim-all-in-one
-    image: metagoto/nav2_sim_humble:v1.2.6-cyclone
+    image: metagoto/nav2_sim_humble:v1.2.10
     entrypoint: ["/entrypoint.sh x2goglx2 ros2 launch nav2_edge_eval nav2_edge_eval.launch.py"]
     # entrypoint: ["sleep 5"]
     sourceWs: /ws/install
@@ -108,10 +108,10 @@ rosParamMap:
       RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
 
       record_rosbag: true
-      world: maze # warehouse / maze / depot
-      world_var: ''
-      start_pose: '1.0,-0.4,0.0'
-      goal_poses: "'2,-2,0;0,-3.5,0;-2,-3,0;0,0,0'"
+      world: warehouse # warehouse / maze / depot
+      world_var: 'C0'
+      start_pose: '0.0,0.0,0.0'
+      goal_poses: "'0,-0.5,0;-2,-0.5,0;-3,-2.5,0;0,-6,0'"
       # goal_poses: "'1,-1,0'"
       localization_method: rtabmap  # slamtoolbox / amcl / rtabmap
       loop_execution: false
