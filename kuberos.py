@@ -328,6 +328,7 @@ class KuberosCli():
         )
         parser.add_argument('batch_job_name', help='Batch job name')
         parser.add_argument('-o', help='Output format: detail')
+        parser.add_argument('--usage_to', help='save usage to a file')
         args = parser.parse_args(args)
 
         # call API server
@@ -348,6 +349,7 @@ class KuberosCli():
             print('\n')
             print(f"Batch Job Name: {data['name']}")
             print(f"Status: {data['status']}")
+            print(f"Execution time: {data['execution_time']}")
             print(f"Executed clusters: {data['exec_clusters']}")
             print('='*60)
             # Job Queues
@@ -362,6 +364,12 @@ class KuberosCli():
             } for item in data['batch_job_group_set']]
             table = tabulate(job_queues_to_display, headers="keys", tablefmt='plain')
             print(table)
+
+            file_path = args.usage_to
+            if file_path:
+                file_path += f'/{args.batch_job_name}.json'
+                with open(file_path, 'w') as f:
+                    json.dump(data['get_resource_usages'], f)
 
             if args.o == 'detail':
                 print('More details')
