@@ -1,0 +1,15 @@
+### Python 
+*.log
+*.pot 
+*.pyc
+__pychache__/
+
+### Build
+build/
+dist/
+*.egg-info/
+
+
+private_configs/
+tmp/
+
