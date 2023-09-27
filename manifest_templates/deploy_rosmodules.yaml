@@ -1,0 +1,108 @@
+apiVersion: v1alpha
+kind: ApplicationDeployment
+metadata:
+  name: hi
+  rosVersion: humble
+  appVersion: dev-1
+  targetFleet: fleet-name # bw0-fleet # xx
+  targetRobots: ['simbot-1'] # Optional, if not specified, deploy to all robots in the fleet
+  edgeResourceGroup: ['public'] # Optional, if not specified, use the default edge resource group
+
+rosModules:
+  - name: hello-world-talker
+    image: <image address>
+    containerRegistryName: default # Optional, if not specified, use the default registry
+    
+    entrypoint: ["ros2 launch examples_rclpy_minimal_publisher publisher.launch.py"]
+    sourceWs: /workspace/install   # Optional, you can also do it in Dockerfile
+
+    preference: [onboard] # Preference for scheduler
+    
+    launchParameters: # Placeholder -> Not used in this example
+      # args used in the launch file
+      # robot_ip: {SIM_ARM.ROBOT_IP} # hardware specific parameters -> Uppercase
+      init_topic: {launch-parameters.init_topic} # software specific parameters -> Lowercase
+
+    requirements: 
+      latency: 50ms # max allowed latency
+      dynamicRescheduling: false
+      privilege: false
+      peripheral: ['sim-arm'] 
+      nvidia: false # use nvidia gpu
+      containerRuntime: containerd/docker # placeholder for the future
+
+    # To make this module reusable, you shouldn't change the rosmodule description
+    # To use custom configuration, you can define your parameters in rosParameters/staticFiles section. 
+    # In KubeROS Abstraction: code / configuration / file are separated!
+    # DON'T MODIFY THE ROSMODULE, MODIFY THE ROSPARAMMAP!
+    rosParameters: 
+      # launch args
+      - name: launch-parameters # this name is used as name of ConfigMap in K8s
+        type: key-value
+        valueFrom: helloworld-launch-parameters
+
+      # yaml file to parameter server
+      - name: minimal-publisher-params
+        type: yaml
+        valueFrom: publisher-param.yaml # this name is what ROS module use to load the file
+        mountPath: /workspace/config/minimal_publisher # keep the same as the parameter file path in the launch file
+
+    staticFiles:
+      - name: ml_weights_container
+        requiredBindType: container 
+        hostpath: /workspace/configs/ml_model_weights
+        valueFrom: ml-weights-container
+
+  - name: hello-world-listener
+    image: metagoto/ros2-basic-examples:v2-param
+
+    entrypoint: ["ros2 run examples_rclpy_minimal_subscriber subscriber_lambda"]
+    sourceWs: /workspace/install
+
+    preference: [edge] # Preference for scheduler
+    requirements:
+      latency: 0ms # max allowed latency, 0 means no latency requirement
+      dynamicRescheduling: false
+      privilege: false
+
+rosParamMap:
+  # custom parameters
+  - name: helloworld-launch-parameters
+    type: key-value
+    data:
+      use_sim: false
+      init_topic: 'KuberROS'
+      STARTX11: true
+
+  - name: publisher-param.yaml # yaml file to parameter server
+    type: yaml
+    path: <path in your local machine>
+  
+
+staticFileMap: 
+
+  - name: ml-weights-container 
+    # Weights is package into a container and deployed along the rosmodule in the same pod. 
+    bindType: container
+    dataPath: /workspace/configs/ml_model_weights # the path in the container
+    container: 
+      - image: <container image address> 
+        pullSecret: <name of your credential in KubeROS database> 
+  
+  # Following methods is not supported in this version (Placeholder)
+  - name: ml-weights-container
+    # The file will be uploaded to the target cluster node
+    bindType: container | upload | pv
+    path: config_files/ml_model_weights.dummy
+    hostpath: /workspace/config/weights
+  - name: claimed_pv
+    # decoupled storage, for using in the edge and cloud. 
+    # feature with low priority. 
+
+
+# Provide the registry credential to pull the image
+containerRegistry:
+  - name: default
+    imagePullSecretName: 'Pull secret name in KubeROS database which is same as in the K8s'
+    imagePullPolicy: 'Always'
+
