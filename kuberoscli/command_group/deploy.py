@@ -2,6 +2,7 @@
 Command group Deploy
 """
 
+import os
 import sys
 import yaml
 from tabulate import tabulate
@@ -28,8 +29,6 @@ Commands:
     delete       Delete deployed application via deployment name
     
     upgrade      Upgrade an existing deployment -> TODO
-    
-    check        Check the deployment request -> TODO
 '''
 
 
@@ -95,11 +94,12 @@ class DeployCommandGroup(CommandGroupBase):
         config = KuberosConfig.get_current_config()
 
         try:
-            with open(parsed_args.file, "r") as yaml_file:
+            with open(parsed_args.file, "r", encoding="utf-8") as yaml_file:
 
                 deploy_content = yaml.safe_load(yaml_file)
                 rosparam_yamls = self.load_yaml_files_from_parammap(
-                    deploy_content)
+                    deploy_content,
+                    manifest_path=parsed_args.file)
 
                 # call api server
                 _, response = self.call_api(
@@ -119,7 +119,8 @@ class DeployCommandGroup(CommandGroupBase):
             sys.exit(1)
 
     @staticmethod
-    def load_yaml_files_from_parammap(deploy_content: dict):
+    def load_yaml_files_from_parammap(deploy_content: dict,
+                                      manifest_path: str):
         """
         Load the yaml files from the rosParamMap
 
@@ -143,7 +144,13 @@ class DeployCommandGroup(CommandGroupBase):
         for item in parammap:
             if item['type'] == 'yaml':
                 try:
-                    with open(item['path'], 'r') as yaml_file:
+                    yaml_path = item['path']
+                    if not yaml_path.startswith('/'):
+                        # use relative path
+                        manifest_path_parent = manifest_path.split('/')[:-1]
+                        yaml_path = os.path.join(os.getcwd(), *manifest_path_parent, yaml_path)
+
+                    with open(yaml_path, 'r', encoding="utf-8") as yaml_file:
                         # read the file content, don't parse it to dict
                         param_files.append({
                             'name': item['name'],
