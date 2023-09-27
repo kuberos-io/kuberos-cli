@@ -1,0 +1,61 @@
+apiVersion: v1alpha
+kind: ApplicationDeployment
+metadata:
+  name: hi
+  rosVersion: humble
+  appVersion: dev-1
+  targetFleet: xx
+  targetRobots: ['simbot-2']
+  edgeResourceGroup: ['public'] # default
+
+rosModules:
+  # RosModule 1: talker
+  - name: hello-world-talker
+    image: metagoto/ros2-basic-examples:v2-param
+    
+    entrypoint: ["ros2 launch examples_rclpy_minimal_publisher publisher.launch.py"]
+    sourceWs: /workspace/install   # Optional, you can also do it in Dockerfile
+    preference: [onboard]
+    
+    launchParameters:
+      init_topic: {launch-parameters.init_topic}
+
+    requirements: 
+      latency: 50ms
+      dynamicRescheduling: false
+      privilege: true
+      peripheral: ['sim-arm']
+
+    rosParameters: 
+      # launch args
+      - name: launch-parameters
+        type: key-value
+        valueFrom: helloworld-launch-parameters
+
+      # yaml file to parameter server
+      - name: minimal-publisher-params
+        type: yaml
+        valueFrom: publisher-param.yaml
+        mountPath: /workspace/config/minimal_publisher
+
+  # RosModule 2: listener
+  - name: hello-world-listener
+    image: metagoto/ros2-basic-examples:v2-param
+
+    entrypoint: ["ros2 run examples_rclpy_minimal_subscriber subscriber_lambda"]
+    sourceWs: /workspace/install
+    preference: [edge]
+    requirements:
+      latency: 50ms
+    
+rosParamMap:
+  # custom parameters
+  - name: helloworld-launch-parameters
+    type: key-value
+    data:
+      use_sim: false
+      init_topic: 'KuberROS'
+
+  - name: publisher-param.yaml # yaml file to parameter server
+    type: yaml
+    path: configs/publisher_param.yaml # use relative path
