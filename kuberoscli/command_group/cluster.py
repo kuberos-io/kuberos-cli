@@ -29,7 +29,8 @@ Commands:
     
     update       Update a cluster inventory description
                  -f --file:  cluster inventory yaml file path
-                 
+                 -c --clean: remove the legacy cluster inventory
+
     delete       Remove the cluster from KubeROS
 '''
 
@@ -58,6 +59,7 @@ class ClusterCommandGroup(CommandGroupBase):
 
         self.init_subcommand_create()
         self.init_subcommand_info()
+        self.init_subcommand_update()
         self.init_subcommand_delete()
 
     def init_subcommand_create(self):
@@ -81,6 +83,20 @@ class ClusterCommandGroup(CommandGroupBase):
         parser.add_argument('-u', '--usage', action='store_true',
                             help='Get current resource usage')
 
+    def init_subcommand_update(self):
+        """
+        Initialize the subcommand <update>
+        """
+        parser = self.commands['update']
+        parser.add_argument(
+            '-f', '--file',
+            help='File path of cluster registration')
+        parser.add_argument(
+            '-c', '--clean',
+            default=False,
+            action='store_true',
+            help='Clean the labels, remove the legacy cluster inventory')
+
     def init_subcommand_delete(self):
         """
         Initialize the subcommand <delete>
@@ -103,8 +119,8 @@ class ClusterCommandGroup(CommandGroupBase):
         config = KuberosConfig.get_current_config()
         url = f"{config['server']}/{Endpoints.CLUSTER}"
         try:
-            with open(ca_file_path, 'r') as f:
-                files = {'ca_crt_file': f}
+            with open(ca_file_path, 'r', encoding='utf-8') as file:
+                files = {'ca_crt_file': file}
                 success, res = self.call_api(
                     'POST',
                     url,
@@ -131,8 +147,8 @@ class ClusterCommandGroup(CommandGroupBase):
             dict: cluster registreation dict
         """
         try:
-            with open(yaml_file, 'r') as f:
-                manifest = yaml.safe_load(f)
+            with open(yaml_file, 'r', encoding='utf-8') as file:
+                manifest = yaml.safe_load(file)
                 meta_data = manifest['metadata']
                 cluster = {
                     'cluster_name': meta_data['name'],
@@ -145,6 +161,40 @@ class ClusterCommandGroup(CommandGroupBase):
         except FileNotFoundError:
             print(f'Cluster registration file: {yaml_file} not found.')
             sys.exit(1)
+
+    def update(self, *args):
+        """
+        Update the cluster inventory description
+        and the cluster node labels
+        """
+        parser = self.commands['update']
+        parsed_args = parser.parse_args(args)
+
+        config = KuberosConfig.get_current_config()
+        cluster_url = f"{config['server']}/{Endpoints.CLUSTER_INVENTORY}"
+
+        try:
+            with open(parsed_args.file, 'r', encoding='utf-8') as file:
+                files = {'inventory_description': file}
+                data = {
+                    'clean': str(parsed_args.clean)
+                }
+                # call API server
+                _, res = self.call_api(
+                    'POST',
+                    cluster_url,
+                    files=files,
+                    data=data,
+                    auth_token=config['token'],
+                )
+                if res['res'] == 'success':
+                    print(res)
+                else:
+                    print(res)
+        except FileNotFoundError:
+            print(f'Inventory description file: {parsed_args.file} not found.')
+            sys.exit(1)
+
 
     def info(self, *args):
         """
