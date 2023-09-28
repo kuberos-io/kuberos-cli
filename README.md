@@ -17,7 +17,39 @@ KubeROS CLI tool depends only on the following common packages, it should not ca
 Required python version: `python >= 3.8`
 
 ```bash
+# (Optional) install python3-pip
+sudo apt update
+sudo apt install python3-pip
+```
+
+**Optional 1**: install this system-wide
+
+The python packages will be installed in `/usr/lib/python3/dist-packages`
+
+The `kuberos` script will be installed in `/usr/local/bin`
+
+```bash
+# Instal KubeROS CLI
+sudo pip install --system kuberos-cli
+# enable autocompletion
+activate-global-python-argcomplete
+```
+
+**Opotion 2**: install used the default `User Scheme`
+
+The packages are installed in `~/.local/lib/python3/`
+
+The executable scripts are in `~/.local/bin`
+
+In this case, you have to add the `~/.local/bin` to the `$PATH`
+```bash
+# Instal KubeROS CLI
 pip install kuberos-cli
+
+# export ~/.local/bin to $PATH in .bashrc or .bash_profile
+echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
+source ~/.bashrc
+
 # enable autocompletion
 activate-global-python-argcomplete
 ```
