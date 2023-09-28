@@ -27,3 +27,4 @@ class Endpoints:
 
     # Registry token
     REGISTRY_TOKEN = 'api/v1/cluster/container_registry_access_tokens/'
+    REGISTER_TOKEN_TO_CLUSTER = 'api/v1/cluster_operating/container_registry_access_token/'

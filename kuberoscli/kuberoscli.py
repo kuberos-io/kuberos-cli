@@ -26,6 +26,7 @@ from kuberoscli.command_group.fleet import FleetCommandGroup
 from kuberoscli.command_group.deploy import DeployCommandGroup
 from kuberoscli.command_group.config import ConfigCommandGroup
 from kuberoscli.command_group.batchjob import BatchJobCommandGroup
+from kuberoscli.command_group.registry import RegistryCommandGroup
 
 
 CLI_HELP_SUMMARY = '''
@@ -75,6 +76,7 @@ class KuberosCli:
             'job': BatchJobCommandGroup(subparsers=group_subparsers),
             'cluster': ClusterCommandGroup(subparsers=group_subparsers),
             'fleet': FleetCommandGroup(subparsers=group_subparsers),
+            'registry': RegistryCommandGroup(subparsers=group_subparsers),
             'config': ConfigCommandGroup(subparsers=group_subparsers),
         })
 
