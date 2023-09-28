@@ -171,8 +171,9 @@ class CommandGroupBase:
 
             if err_type == 401:
                 # Unauthorized
-                print(
-                    "[Unauthorized '401'] Login is required. The cached token is expired.")
+                print("[Unauthorized '401'] Login is required. \
+                    The cached token is expired.")
+                print("Login again by using command: kuberos config login")
 
             if err_type == 404:
                 # Requested resource not found
@@ -196,4 +197,7 @@ class CommandGroupBase:
             sys.exit(1)
 
     def print_help(self):
-        print("To be implemented")
+        """
+        Print the help message
+        """
+        return NotImplementedError

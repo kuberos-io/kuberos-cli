@@ -1,3 +1,7 @@
+"""
+KubeROS Config object to handle the config file
+"""
+
 import os
 import sys
 import yaml
@@ -21,6 +25,28 @@ class KuberosConfig:
         config_path = os.path.expanduser(config_path)
         return config_path
 
+    @staticmethod
+    def create_config_file(config_path: str):
+        """
+        Create a new config file
+        """
+        if os.path.isfile(config_path):
+            print("Config file already exists")
+        else:
+            # check if the config folder exists
+            if not os.path.isdir(os.path.dirname(config_path)):
+                os.mkdir(os.path.dirname(config_path))
+
+            # create the config file
+            with open(config_path, "w", encoding="utf-8") as file:
+                yaml.safe_dump({
+                    'current-context': '',
+                    'contexts': []
+                },
+                    file,
+                    default_flow_style=False)
+            print(f'Create config file in path: {config_path}')
+
     @classmethod
     def load_kuberos_config(cls) -> dict:
         """
@@ -28,14 +54,14 @@ class KuberosConfig:
         """
         config_path = cls.get_config_path()
 
-        # load the config file
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = yaml.safe_load(f)
-        except FileNotFoundError:
-            os.mkdir(os.path.dirname(config_path))
-            print(f'Config file not found in path: {config_path}')
-            print("Create config folder in default path: ~/.kuberos/config ")
+        if os.path.isfile(config_path):
+            with open(config_path, "r", encoding="utf-8") as file:
+                config = yaml.safe_load(file)
+        else:
+            cls.create_config_file(config_path)
+            print("Cannot find config file")
+            print(f"create a new config file in default path: {config_path}")
+            print("Please add a new context by using command: kuberos config create")
             sys.exit(1)
 
         return config
@@ -66,9 +92,9 @@ class KuberosConfig:
         if current_context is not None:
             config['current-context'] = current_context
 
-        with open(config_path, "w", encoding="utf-8") as f:
+        with open(config_path, "w", encoding="utf-8") as file:
             yaml.safe_dump(config,
-                           f,
+                           file,
                            default_flow_style=False)
         # print('Update config file success')
 
@@ -90,9 +116,9 @@ class KuberosConfig:
             if con['name'] != context_name:
                 new_config['contexts'].append(con)
 
-        with open(config_path, "w", encoding="utf-8") as f:
+        with open(config_path, "w", encoding="utf-8") as file:
             yaml.safe_dump(new_config,
-                           f,
+                           file,
                            default_flow_style=False)
 
     @classmethod
@@ -112,24 +138,51 @@ class KuberosConfig:
         config = cls.load_kuberos_config()
 
         try:
-            contexts = config['contexts']
             current_context = config['current-context']
         except KeyError:
             print("Error in config file, please check the config file")
+            print(f"Config file path: {config}")
+            print("Quick fix: delete the config file and create a new context using command: kuberos config create")
             sys.exit(0)
 
-        # get current context config
-        current_config = None
+        # get current context confi
+        current_config = cls.get_context_by_name(current_context)
+
+        return current_config
+
+    @classmethod
+    def get_context_by_name(cls,
+                            ctx_name: str) -> dict:
+        """
+        Get the context config by name
+
+        Args:
+            ctx_name (str): context name
+
+        Returns:
+            ctx_config (dict): context config
+        """
+        config = cls.load_kuberos_config()
+        ctx_config = None
+
+        try:
+            contexts = config['contexts']
+        except KeyError:
+            print("Error in config file, please check the config file")
+            print(f"Config file path: {config}")
+            print("Quick fix: delete the config file and \
+                create a new context using command: kuberos config create")
+            sys.exit(0)
+
         for con in contexts:
-            if con['name'] == current_context:
-                current_config = con
+            if con['name'] == ctx_name:
+                ctx_config = con
                 break
 
-        if current_config is None:
-            print("No current context found")
+        if ctx_config is None:
+            print(f"Context [{ctx_name}] not found")
             contexts_name = [con['name'] for con in contexts]
             print(f"Available contexts: {contexts_name}")
             sys.exit(1)
 
-        return current_config
-
+        return ctx_config

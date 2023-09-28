@@ -34,6 +34,8 @@ Commands:
     
     logout       Logout from the KubeROS api server
     
+    update       Update the context in the config file
+    
     delete       Delete a context from the config file
 '''
 
@@ -52,13 +54,14 @@ class ConfigCommandGroup(CommandGroupBase):
     Command group [config] for KubeROS CLI
     """
 
-    COMMAND_LIST = ['login', 'logout', 'switch', 'list', 'create', 'delete']
+    COMMAND_LIST = ['login', 'logout', 'switch', 'list', 'create', 'delete', 'update']
 
     def __init__(self, subparsers) -> None:
         super().__init__(subparsers, 'config')
 
         self.init_subcommand_switch()
         self.init_subcommand_create()
+        self.init_subcommand_update()
         self.init_subcommand_delete()
 
     def init_subcommand_switch(self):
@@ -74,11 +77,29 @@ class ConfigCommandGroup(CommandGroupBase):
         Initialize the subcommand create
         """
         parser = self.commands['create']
-        parser.add_argument('--name', required=True,
+        parser.add_argument('-n', '--name',
+                            required=True,
                             help="Context name (unique)")
-        parser.add_argument('--server', required=True,
+        parser.add_argument('-s', '--server',
+                            required=True,
                             help="KubeROS API server address")
-        parser.add_argument('--user', required=True, help="KubeROS username")
+        parser.add_argument('-u', '--user',
+                            required=False,
+                            help="KubeROS username")
+
+    def init_subcommand_update(self):
+        """
+        Initialize the subcommand update
+        """
+        parser = self.commands['update']
+        parser.add_argument('context_name',
+                            help="Name of the context").completer = ContextNameCompleter()
+        parser.add_argument('-s', '--server',
+                            required=False,
+                            help="KubeROS API server address")
+        parser.add_argument('-u', '--user',
+                            required=False,
+                            help="KubeROS username")
 
     def init_subcommand_delete(self):
         """
@@ -88,7 +109,7 @@ class ConfigCommandGroup(CommandGroupBase):
         parser.add_argument('context_name',
                             help="Name of the context").completer = ContextNameCompleter()
 
-    def list(self, *args):
+    def list(self):
         """
         List the contexts
         """
@@ -115,9 +136,46 @@ class ConfigCommandGroup(CommandGroupBase):
             'user': args.user,
             'token': ''
         }
+
+        # check whether the context name is existed
+        existed_ctx = KuberosConfig.get_context_names()
+        if context['name'] in existed_ctx:
+            print("Context name is existed")
+            print("Please use another name or update using command: kuberos config update")
+            sys.exit(1)
+
+        # create new context
         KuberosConfig.update_config(context=context,
                                     current_context=context['name'])
         print("Add new context successfully")
+        print("Please login to the api server to get the authentication token")
+
+
+    def update(self, *args):
+        """
+        Update the context in the local cli config file
+        """
+        parser = self.commands['update']
+        parsered_args = parser.parse_args(args)
+
+        ctx = KuberosConfig.get_context_by_name(parsered_args.context_name)
+
+        change_detected = False
+        if parsered_args.server:
+            ctx['server'] = parsered_args.server
+            print(f"New KubeROS API server address: {parsered_args.server}")
+            change_detected = True
+        if parsered_args.user:
+            ctx['user'] = parsered_args.user
+            print(f"New username: {parsered_args.user}")
+            change_detected = True
+
+        if change_detected:
+            KuberosConfig.update_config(context=ctx)
+            print("Update context successfully")
+        else:
+            print("No change detected")
+
 
     def delete(self, *args):
         """
@@ -154,7 +212,9 @@ class ConfigCommandGroup(CommandGroupBase):
         Login to the api server
         """
         config_context = KuberosConfig.get_current_config()
-        print('current api server: ', config_context['server'])
+        print(f"Current Context: {config_context['name']}")
+        print(f"Current Server: {config_context['server']}")
+        print(f"Current User: {config_context['user']}")
         print("Login to kuberos: >>>")
         username = input("Username: ")
         password = getpass.getpass("Password: ")
@@ -187,7 +247,11 @@ class ConfigCommandGroup(CommandGroupBase):
         if success:
             print("Logout successfully")
 
-    def _call_auth_api(self, method, url, json_data=None, auth_token=None):
+    def _call_auth_api(self,
+                       method: str,
+                       url: str,
+                       json_data: dict = None,
+                       auth_token: str = None):
         """
         Modified version of call_api in command_group/base.py
         For status code handling in login and logout process
@@ -201,7 +265,7 @@ class ConfigCommandGroup(CommandGroupBase):
                                     url,
                                     json=json_data,
                                     headers=headers,
-                                    timeout=3)
+                                    timeout=2)
 
             status_code = resp.status_code
 
