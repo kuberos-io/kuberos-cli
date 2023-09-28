@@ -2,21 +2,60 @@
 
 This repo contains the cli tools for users to interact with KubeROS platform. 
 
-## Install
+## Installation
 
-There are two methods to install the cli tools
+There are three methods to install the cli tool.
 
-**Using pip**
-We recommand to use this method
+
+### 1. Install in local path
+KubeROS CLI tool depends only on the following common packages, it should not cause the compatibility problem with other packages.
+ - argcomplete
+ - PyYAML
+ - requests
+ - tabulate
+
+Required python version: `python >= 3.8`
+
 ```bash
-pip install kuberoscli
+pip install kuberos-cli
 # enable autocompletion
 activate-global-python-argcomplete
-eval "$(register-python-argcomplete kuberos)"
 ```
 
-**From source**
-For development purpose
+
+
+### 2. Install in Virtual Environment (Venv)
+
+You can install this CLI tool in an isolated Python environment with `venv` to avoid interfering with other projects due to dependencies.
+
+Create a `Venv` and add the `venv/bin` to `$PATH`
+```bash
+sudo apt update
+sudo apt install python3-venv
+
+# create a virtual environment
+cd <work directory>
+python3 -m venv kuberos_cli_venv
+
+# add the kuberos_cli_venv/bin to PATH
+cd kuberos_cli_venv/bin
+pwd # get the absolute path <local-bin-path-in-venv>
+
+# replace the <local-bin-path-in-venv> with the path printed above 
+# add it to .bashrc, or another profile depending on the terminal tool you are using
+echo 'export PATH=$PATH:<local-bin-path-in-venv>' >> ~/.bashrc
+```
+
+Install `kuberos-cli` with `pip`:
+```bash
+pip install kuberos-cli
+# enable autocompletion gobally
+activate-global-python-argcomplete
+```
+
+
+### 3. From source (For Development)
+
 ```bash
 git clone https://github.com/kuberos-io/kuberos-cli.git
 cd kuberos-cli
@@ -24,6 +63,10 @@ pip install -r requirements.txt
 # build it (optional)
 python3 -m build
 pip3 install -U .
+# enable arg auto completion
+eval "$(register-python-argcomplete kuberos)"
+# override the python path to use the library from source
+echo $PYTHONPATH=$PYTHONPATH:<path-to-source-code> # e.g. ~/ws/kuberos-cli
 ```
 
 
