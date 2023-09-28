@@ -15,12 +15,12 @@ KubeROS CLI tool depends only on the following common packages, it should not ca
  - tabulate
 
 Required python version: `python >= 3.8`
-
 ```bash
-# (Optional) install python3-pip
+# install python3-pip
 sudo apt update
 sudo apt install python3-pip
 ```
+
 
 **Optional 1**: install this system-wide
 
@@ -35,7 +35,7 @@ sudo pip install --system kuberos-cli
 activate-global-python-argcomplete
 ```
 
-**Opotion 2**: install used the default `User Scheme`
+**Opotion 2**: using the default [User Scheme](https://pip.pypa.io/en/stable/user_guide/#user-installs)
 
 The packages are installed in `~/.local/lib/python3/`
 
@@ -58,7 +58,7 @@ activate-global-python-argcomplete
 
 ### 2. Install in Virtual Environment (Venv)
 
-You can install this CLI tool in an isolated Python environment with `venv` to avoid interfering with other projects due to dependencies.
+You can install this CLI tool in an isolated Python environment with [venv](https://docs.python.org/3/library/venv.html) to avoid interfering with other projects due to dependencies.
 
 Create a `Venv` and add the `venv/bin` to `$PATH`
 ```bash
