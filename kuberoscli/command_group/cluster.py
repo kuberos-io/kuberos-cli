@@ -256,7 +256,7 @@ class ClusterCommandGroup(CommandGroupBase):
                     edge_nodes.append({
                         'HOSTNAME': node['hostname'],
                         'GROUP': node.get('resource_group', None),
-                        'SHARED RESOURCE': node.get('is_shared', None),
+                        'SHARED': node.get('is_shared', None),
                         'IS_ALIVE': node['is_alive'],
                         'AVAILABLE': node['is_available'],
                         'REACHABLE': node['is_alive']})

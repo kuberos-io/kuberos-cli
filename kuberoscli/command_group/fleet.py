@@ -46,7 +46,7 @@ class FleetCommandGroup(CommandGroupBase):
     Command group [fleet]
     """
 
-    COMMAND_LIST = ['list', 'create', 'delete', 'info']
+    COMMAND_LIST = ['create', 'list', 'info', 'delete', 'update']
 
     RESOURCE_URL = 'api/v1/fleet/fleets_name_list'
 
@@ -64,7 +64,7 @@ class FleetCommandGroup(CommandGroupBase):
         """
         parser = self.commands['create']
         parser.add_argument(
-            '-f', '--file', help='File path of cluster registration')
+            '-f', '--file', help='File path of fleet manifest')
 
     def init_subcommand_info(self):
         """
@@ -96,9 +96,9 @@ class FleetCommandGroup(CommandGroupBase):
 
         url = f"{config['server']}/{Endpoints.FLEET}"
         try:
-            with open(file_path, 'r') as f:
-                files = {'fleet_manifest': f}
-                success, res = self.call_api(
+            with open(file_path, 'r', encoding='utf-8') as file:
+                files = {'fleet_manifest': file}
+                success, _ = self.call_api(
                     'POST',
                     url,
                     files=files,
@@ -126,8 +126,8 @@ class FleetCommandGroup(CommandGroupBase):
             dict: cluster registreation dict
         """
         try:
-            with open(yaml_file, 'r') as f:
-                manifest = yaml.safe_load(f)
+            with open(yaml_file, 'r', encoding='utf-8') as file:
+                manifest = yaml.safe_load(file)
                 meta_data = manifest['metadata']
                 cluster = {
                     'cluster_name': meta_data['name'],
