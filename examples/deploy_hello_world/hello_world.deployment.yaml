@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ApplicationDeployment
+metadata:
+  name: hi-kube
+  rosVersion: humble
+  appVersion: dev-1
+  targetFleet: xx
+  targetRobots: ['simbot-1']
+  edgeResourceGroup: ['public'] # default
+
+rosModules:
+  - name: hello-world-talker
+    image: metagoto/ros2-basic-examples_hello_world:humble-v1.0
+    entrypoint: ["ros2 launch minimal_publisher_extended publisher.launch.py"]
+    sourceWs: /ws/install
+    preference: [onboard]
+
+    requirements: 
+      latency: 50ms
+      dynamicRescheduling: false
+      privilege: false
+
+    launchParameters:
+      init_topic: {launch-parameters.init_topic}
+      params_file: {launch-parameters.params_file}
+
+    rosParameters: 
+      - name: launch-parameters
+        type: key-value
+        valueFrom: helloworld-launch-parameters
+      - name: minimal-publisher-params
+        type: yaml
+        mountPath: /ws/config/minimal_publisher # parent path of parameter yaml file
+        valueFrom: publisher-param.yaml 
+
+  - name: hello-world-listener
+    image: metagoto/ros2-basic-examples_hello_world:humble-v1.0
+    entrypoint: ["ros2 run examples_rclpy_minimal_subscriber subscriber_lambda"]
+    sourceWs: /ws/install
+    preference: [edge, onboard] # Preference for scheduler
+    requirements: 
+      latency: 50ms
+      dynamicRescheduling: false
+      privilege: false
+    
+rosParamMap:
+  # custom parameters
+  - name: helloworld-launch-parameters
+    type: key-value
+    data:
+      init_topic: "'Container World'"
+      params_file: '/ws/config/minimal_publisher/publisher-param.yaml'
+
+
+  - name: publisher-param.yaml
+    type: yaml
+    path: config/publisher_param.yaml
